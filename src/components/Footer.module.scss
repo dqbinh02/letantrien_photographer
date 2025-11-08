@@ -1,0 +1,5 @@
+.mobile {
+    @media (max-width: 768px) {
+        padding-bottom: var(--responsive-space-xl);
+    }
+}
