@@ -31,6 +31,7 @@ export default function GalleryView({ images, useRegularImg = false }: GalleryVi
                   modal.innerHTML = `
                     <div class="max-w-[90vw] max-h-[90vh] relative">
                       <button class="absolute top-2 right-2 z-10 bg-white/90 text-black rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold" onclick="this.parentElement.parentElement.remove()">×</button>
+                      <button class="absolute top-2 right-14 z-10 bg-white/90 text-black rounded-full w-8 h-8 flex items-center justify-center text-lg" onclick="const a = document.createElement('a'); a.href='${image.src}'; a.download='${image.alt}'; a.click();">↓</button>
                       <img src="${image.src}" alt="${image.alt}" class="max-w-full max-h-full object-contain rounded-lg" />
                     </div>
                   `;

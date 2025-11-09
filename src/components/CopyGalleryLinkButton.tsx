@@ -40,7 +40,16 @@ export function CopyGalleryLinkButton({ albumId, token, baseURL }: CopyGalleryLi
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-      <Text variant="body-default-s" onBackground="neutral-weak">
+      <Text
+        variant="body-default-s"
+        onBackground="neutral-weak"
+        style={{
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          maxWidth: "min(200px, 40vw)",
+        }}
+      >
         {galleryLink}
       </Text>
       <Button
