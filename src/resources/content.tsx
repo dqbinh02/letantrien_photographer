@@ -1,29 +1,24 @@
 import { Album, Gallery, Person, Social } from "@/types";
 
 const person: Person = {
-  firstName: "Your",
-  lastName: "Name",
-  name: "Your Name",
+  firstName: "Lê Tấn",
+  lastName: "Triển",
+  name: "Lê Tấn Triển",
   role: "Photographer",
   avatar: "/images/avatar.jpg",
-  email: "your.email@example.com",
+  email: "letantrien@example.com",
 };
 
 const social: Social = [
   {
-    name: "GitHub",
-    icon: "github",
-    link: "https://github.com/yourusername",
-  },
-  {
     name: "LinkedIn",
     icon: "linkedin",
-    link: "https://linkedin.com/in/yourusername",
+    link: "https://linkedin.com/in/letantrien",
   },
   {
-    name: "X",
-    icon: "x",
-    link: "https://x.com/yourusername",
+    name: "facebook",
+    icon: "facebook",
+    link: "https://www.facebook.com/trien.le.716533",
   },
 ];
 
