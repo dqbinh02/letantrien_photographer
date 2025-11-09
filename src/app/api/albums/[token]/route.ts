@@ -35,7 +35,8 @@ export async function GET(
     const media = await db
       .collection<MediaDocument>('media')
       .find({ albumId: album._id })
-      .sort({ uploadedAt: -1 })
+      // sort ascending (oldest first) so newest appear last
+      .sort({ uploadedAt: 1 })
       .toArray();
 
     return NextResponse.json({ success: true, data: { album, media } });

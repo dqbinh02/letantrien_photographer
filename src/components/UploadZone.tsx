@@ -8,6 +8,7 @@ interface UploadZoneProps {
   onFilesSelected: (files: File[]) => void;
   isUploading?: boolean;
   accept?: string;
+  /** maxFiles: if undefined, no limit */
   maxFiles?: number;
 }
 
@@ -15,7 +16,7 @@ export function UploadZone({
   onFilesSelected,
   isUploading = false,
   accept = "image/*,video/*",
-  maxFiles = 10
+  maxFiles
 }: UploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,12 +50,14 @@ export function UploadZone({
 
   const handleFiles = (files: File[]) => {
     // Filter to only images and videos
-    const validFiles = files.filter(file =>
-      file.type.startsWith('image/') || file.type.startsWith('video/')
+    const validFiles = files.filter((file) =>
+      file.type.startsWith("image/") || file.type.startsWith("video/")
     );
 
-    // Limit number of files
-    const limitedFiles = validFiles.slice(0, maxFiles);
+    // If maxFiles is provided, limit; otherwise accept all
+    const limitedFiles = typeof maxFiles === "number" && isFinite(maxFiles)
+      ? validFiles.slice(0, maxFiles)
+      : validFiles;
 
     onFilesSelected(limitedFiles);
   };
@@ -98,7 +101,9 @@ export function UploadZone({
               or click to select files
             </Text>
             <Text variant="label-default-xs" onBackground="neutral-weak">
-              Supports images and videos (max {maxFiles} files)
+              {typeof maxFiles === 'number' && isFinite(maxFiles)
+                ? `Supports images and videos (max ${maxFiles} files)`
+                : 'Supports images and videos (no limit)'}
             </Text>
           </Column>
 

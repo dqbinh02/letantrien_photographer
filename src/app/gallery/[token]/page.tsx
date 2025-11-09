@@ -51,12 +51,18 @@ export default function PublicGallery(_: any) {
   }, [token]);
 
   const breakpointColumnsObj = {
-    default: 3,
+    // default: 2 columns on desktop
+    default: 2,
+    // keep 2 columns for medium widths, you can set 1 for small screens if desired
     768: 2,
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div
+      className="mx-auto px-4 py-8"
+      // inline style to enforce gallery max width and avoid being overridden by outer layout styles
+      style={{ maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto' }}
+    >
       {albumTitle && <h1 className="text-2xl font-semibold mb-2">{albumTitle}</h1>}
       {albumDescription && <p className="text-sm text-muted mb-4">{albumDescription}</p>}
 
