@@ -4,7 +4,7 @@ import { Column, Heading, Button, Text, Row } from "@once-ui-system/core";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { UploadZone, MediaGrid, CopyGalleryLinkButton } from "@/components";
+import { UploadZone, MediaGrid, CopyGalleryLinkButton, Toast } from "@/components";
 import type { AlbumDocument, MediaDocument } from "@/types";
 
 interface AlbumDetail {
@@ -21,6 +21,7 @@ export default function AlbumDetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   useEffect(() => {
     if (albumId) {
@@ -47,10 +48,43 @@ export default function AlbumDetailPage() {
     }
   };
 
+  const fetchMediaOnly = async () => {
+    try {
+      const response = await fetch(`/api/admin/albums/${albumId}`);
+      const result = await response.json();
+
+      if (result.success && albumDetail) {
+        // Only update media, keep album info unchanged
+        setAlbumDetail({
+          ...albumDetail,
+          media: result.data.media,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching media:", error);
+    }
+  };
+
   const handleFilesSelected = async (files: File[]) => {
-    if (!albumId) return;
+    if (!albumId || !albumDetail) return;
 
     setUploading(true);
+    
+    // Optimistic update: add placeholder items to prevent layout shift
+    const placeholderMedia: MediaDocument[] = files.map((file, idx) => ({
+      albumId: albumDetail.album._id!,
+      url: URL.createObjectURL(file), // temporary local URL
+      type: file.type.startsWith("image/") ? "image" : "video",
+      filename: file.name,
+      uploadedAt: new Date(),
+    }));
+
+    // Update UI optimistically
+    setAlbumDetail({
+      ...albumDetail,
+      media: [...albumDetail.media, ...placeholderMedia],
+    });
+
     try {
       const formData = new FormData();
       files.forEach((file) => {
@@ -65,17 +99,27 @@ export default function AlbumDetailPage() {
       const result = await response.json();
 
       if (result.success) {
-        // Refresh album data
-        await fetchAlbumDetail();
-        alert(`Successfully uploaded ${result.data.length} files`);
+        // Refresh media only to get real URLs from server
+        await fetchMediaOnly();
+        setToast({ message: `Successfully uploaded ${result.data.length} files`, type: 'success' });
       } else {
-        alert(result.error || "Failed to upload files");
+        // Revert optimistic update on error
+        await fetchMediaOnly();
+        setToast({ message: result.error || "Failed to upload files", type: 'error' });
       }
     } catch (error) {
       console.error("Error uploading files:", error);
-      alert("Failed to upload files");
+      // Revert optimistic update on error
+      await fetchMediaOnly();
+      setToast({ message: "Failed to upload files", type: 'error' });
     } finally {
       setUploading(false);
+      // Cleanup temporary URLs
+      placeholderMedia.forEach(item => {
+        if (item.url.startsWith('blob:')) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
     }
   };
 
@@ -92,14 +136,14 @@ export default function AlbumDetailPage() {
       const result = await response.json();
 
       if (result.success) {
-        // Refresh album data
-        await fetchAlbumDetail();
+        // Refresh media list only
+        await fetchMediaOnly();
       } else {
-        alert(result.error || "Failed to delete media");
+        setToast({ message: result.error || "Failed to delete media", type: 'error' });
       }
     } catch (error) {
       console.error("Error deleting media:", error);
-      alert("Failed to delete media");
+      setToast({ message: "Failed to delete media", type: 'error' });
     }
   };
 
@@ -124,11 +168,11 @@ export default function AlbumDetailPage() {
           });
         }
       } else {
-        alert(result.error || "Failed to set cover image");
+        setToast({ message: result.error || "Failed to set cover image", type: 'error' });
       }
     } catch (error) {
       console.error("Error setting cover:", error);
-      alert("Failed to set cover image");
+      setToast({ message: "Failed to set cover image", type: 'error' });
     }
   };
 
@@ -223,6 +267,16 @@ export default function AlbumDetailPage() {
         onSetCover={handleSetCover}
         coverImage={album.coverImage}
       />
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          duration={3000}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </Column>
   );
 }

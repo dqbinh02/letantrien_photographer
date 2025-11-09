@@ -7,3 +7,4 @@ export { AlbumCard } from "@/components/AlbumCard";
 export { CopyGalleryLinkButton } from "@/components/CopyGalleryLinkButton";
 export { UploadZone } from "@/components/UploadZone";
 export { MediaGrid } from "@/components/MediaGrid";
+export { Toast } from "@/components/Toast";
