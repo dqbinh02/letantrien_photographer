@@ -1,172 +1,82 @@
-import { Column, Heading, Text, Meta } from "@once-ui-system/core";
-import { connectToDatabase } from "@/lib/mongodb";
-import type { AlbumDocument, MediaDocument } from "@/types";
-import { notFound } from "next/navigation";
-import GalleryView from "@/components/gallery/GalleryView";
-import { person } from "@/resources";
-import type { Gallery } from "@/types";
+"use client";
 
-interface PageProps {
-  params: Promise<{
-    token: string;
-  }>;
-}
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Masonry from 'react-masonry-css';
 
-async function getAlbumByToken(token: string) {
-  try {
-    const { db } = await connectToDatabase();
+type MediaItem = { _id?: string; url: string; type?: string; filename?: string };
 
-    // Find album by token
-    const album = await db
-      .collection<AlbumDocument>("albums")
-      .findOne({ "link.token": token });
+export default function PublicGallery(_: any) {
+  // In client components, prefer using `useParams` from next/navigation
+  const routeParams = useParams() as { token?: string } | null;
+  const token = routeParams?.token;
 
-    if (!album) {
-      return null;
-    }
+  const [images, setImages] = useState<string[]>([]);
+  const [albumTitle, setAlbumTitle] = useState<string | null>(null);
+  const [albumDescription, setAlbumDescription] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    // Check if album has expired
-    if (album.link.expiresAt && new Date(album.link.expiresAt) < new Date()) {
-      return null;
-    }
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
 
-    // Get media for this album
-    const media = await db
-      .collection<MediaDocument>("media")
-      .find({ albumId: album._id })
-      .sort({ uploadedAt: -1 })
-      .toArray();
+    fetch(`/api/albums/${token}`)
+      .then(async (res) => {
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json?.error || 'Failed to load album');
+        return json;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const media: MediaItem[] = data?.data?.media || [];
+        const imgs = media.filter((m) => m.type !== 'video').map((m) => m.url);
+        setImages(imgs);
+        setAlbumTitle(data?.data?.album?.title || null);
+        setAlbumDescription(data?.data?.album?.description || null);
+      })
+      .catch((err: any) => {
+        if (cancelled) return;
+        setError(err?.message || 'Failed to load album');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-    return { album, media };
-  } catch (error) {
-    console.error("Error fetching album by token:", error);
-    return null;
-  }
-}
-
-// Helper function to determine image orientation
-function getImageOrientation(filename: string): "horizontal" | "vertical" {
-  // Simple heuristic: check filename for orientation hints
-  const lowerFilename = filename.toLowerCase();
-  if (lowerFilename.includes('horizontal') || lowerFilename.includes('wide') || lowerFilename.includes('landscape')) {
-    return 'horizontal';
-  }
-  if (lowerFilename.includes('vertical') || lowerFilename.includes('tall') || lowerFilename.includes('portrait')) {
-    return 'vertical';
-  }
-  // Default to horizontal for most photos
-  return 'horizontal';
-}
-
-export async function generateMetadata({ params }: PageProps) {
-  const resolvedParams = await params;
-  const data = await getAlbumByToken(resolvedParams.token);
-
-  if (!data) {
-    return {
-      title: "Gallery Not Found",
+    return () => {
+      cancelled = true;
     };
-  }
+  }, [token]);
 
-  const { album } = data;
-  const baseURL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-  const ogImageUrl = `${baseURL}/api/og/generate?title=${encodeURIComponent(album.title)}`;
-
-  return {
-    title: album.title,
-    description: album.description || `View ${album.title} gallery`,
-    openGraph: {
-      title: album.title,
-      description: album.description || `View ${album.title} gallery`,
-      url: `${baseURL}/gallery/${resolvedParams.token}`,
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: album.title,
-        },
-      ],
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: album.title,
-      description: album.description || `View ${album.title} gallery`,
-      images: [ogImageUrl],
-    },
-    authors: [
-      {
-        name: person.name,
-        url: baseURL,
-      },
-    ],
-    other: {
-      'article:author': person.name,
-      'article:published_time': album.createdAt.toISOString(),
-    },
+  const breakpointColumnsObj = {
+    default: 3,
+    768: 2,
   };
-}
-
-export default async function PublicGallery({ params }: PageProps) {
-  const resolvedParams = await params;
-  const data = await getAlbumByToken(resolvedParams.token);
-
-  if (!data) {
-    notFound();
-  }
-
-  const { album, media } = data;
-
-  // Convert media to gallery images format
-  const galleryImages: Gallery["images"] = media
-    .filter(m => m.type === 'image')
-    .map(m => ({
-      src: m.url,
-      alt: m.filename,
-      orientation: getImageOrientation(m.filename) as "horizontal" | "vertical",
-    }));
 
   return (
-    <div className="w-full">
-      {/* Album Header */}
-      <div className="max-w-[1200px] mx-auto px-4 pt-24 pb-8">
-        <div className="flex flex-col gap-2 items-center text-center">
-          <Heading variant="heading-strong-xl">{album.title}</Heading>
-          {album.description && (
-            <Text variant="body-default-s" onBackground="neutral-weak">
-              {album.description}
-            </Text>
-          )}
-        </div>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      {albumTitle && <h1 className="text-2xl font-semibold mb-2">{albumTitle}</h1>}
+      {albumDescription && <p className="text-sm text-muted mb-4">{albumDescription}</p>}
 
-      {/* Media Gallery */}
-      {galleryImages.length === 0 ? (
-        <div className="max-w-[1200px] mx-auto px-4 py-16">
-          <div className="flex flex-col gap-4 items-center">
-            <Text variant="body-default-l" onBackground="neutral-weak">
-              No images in this gallery yet
-            </Text>
-          </div>
-        </div>
+      {loading ? (
+        <div className="text-center py-8">Loading gallery…</div>
+      ) : error ? (
+        <div className="text-center text-red-500 py-8">{error}</div>
+      ) : images.length === 0 ? (
+        <div className="text-center py-8">No images to display</div>
       ) : (
-        <GalleryView images={galleryImages} useRegularImg={true} />
+        <Masonry
+          breakpointCols={breakpointColumnsObj}
+          className="my-masonry-grid"
+          columnClassName="my-masonry-grid_column"
+        >
+          {images.map((src, i) => (
+            <img key={i} src={src} alt={`gallery-${i}`} className="rounded-lg w-full h-auto" />
+          ))}
+        </Masonry>
       )}
-
-      {/* Footer */}
-      <div className="max-w-[1200px] mx-auto px-4 py-8">
-        <div className="flex flex-col gap-2 items-center text-center">
-          <Text variant="body-default-xs" onBackground="neutral-weak">
-            Gallery created on {new Date(album.createdAt).toLocaleDateString()}
-          </Text>
-          {album.link.expiresAt && (
-            <Text variant="body-default-xs" onBackground="neutral-weak">
-              Expires on {new Date(album.link.expiresAt).toLocaleDateString()}
-            </Text>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
