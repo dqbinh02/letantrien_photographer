@@ -1,18 +1,36 @@
 import { connectToDatabase } from "@/lib/mongodb";
-import type { AlbumDocument, AlbumFormData } from "@/types";
+import type { AlbumDocument, CreateAlbumRequest, MediaDocument } from "@/types";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { randomBytes } from "crypto";
 
+// GET /api/admin/albums - List all albums with media count
 export async function GET() {
   try {
     const { db } = await connectToDatabase();
+
+    // Get all albums
     const albums = await db
       .collection<AlbumDocument>("albums")
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
 
-    return NextResponse.json({ success: true, data: albums });
+    // Get media count for each album
+    const albumsWithCount = await Promise.all(
+      albums.map(async (album) => {
+        const mediaCount = await db
+          .collection<MediaDocument>("media")
+          .countDocuments({ albumId: album._id });
+
+        return {
+          ...album,
+          mediaCount,
+        };
+      })
+    );
+
+    return NextResponse.json({ success: true, data: albumsWithCount });
   } catch (error) {
     console.error("Error fetching albums:", error);
     return NextResponse.json(
@@ -22,26 +40,34 @@ export async function GET() {
   }
 }
 
+// POST /api/admin/albums - Create new album
 export async function POST(request: NextRequest) {
   try {
-    const body: AlbumFormData = await request.json();
-    const { title, description, coverImage, images } = body;
+    const body: CreateAlbumRequest = await request.json();
+    const { title, description, expiresAt } = body;
 
-    if (!title || !description || !coverImage) {
+    if (!title || title.trim().length === 0) {
       return NextResponse.json(
-        { success: false, error: "Missing required fields" },
+        { success: false, error: "Title is required" },
         { status: 400 }
       );
     }
 
     const { db } = await connectToDatabase();
+
+    // Generate unique token for gallery link
+    const token = randomBytes(16).toString('hex');
+
     const album: Omit<AlbumDocument, "_id"> = {
-      title,
-      description,
-      coverImage,
-      images: images || [],
+      title: title.trim(),
+      description: description?.trim() || "",
+      coverImage: "",
       createdAt: new Date(),
       updatedAt: new Date(),
+      link: {
+        token,
+        expiresAt: expiresAt ? new Date(expiresAt) : null,
+      },
     };
 
     const result = await db.collection<AlbumDocument>("albums").insertOne(album as AlbumDocument);

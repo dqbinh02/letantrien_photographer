@@ -3,3 +3,7 @@ export { Footer } from "@/components/Footer";
 export { Providers } from "@/components/Providers";
 export { ThemeToggle } from "@/components/ThemeToggle";
 export { ThemeInitScript } from "@/components/ThemeInitScript";
+export { AlbumCard } from "@/components/AlbumCard";
+export { CopyGalleryLinkButton } from "@/components/CopyGalleryLinkButton";
+export { UploadZone } from "@/components/UploadZone";
+export { MediaGrid } from "@/components/MediaGrid";

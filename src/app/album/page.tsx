@@ -1,8 +1,10 @@
 import { Column, Heading, Meta, Text, Grid } from "@once-ui-system/core";
 import { baseURL, album } from "@/resources";
 import { connectToDatabase } from "@/lib/mongodb";
-import type { AlbumDocument } from "@/types";
+import type { AlbumDocument, MediaDocument } from "@/types";
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   return Meta.generate({
@@ -13,15 +15,32 @@ export async function generateMetadata() {
   });
 }
 
-async function getAlbums(): Promise<AlbumDocument[]> {
+async function getAlbums() {
   try {
     const { db } = await connectToDatabase();
+
+    // Get all albums
     const albums = await db
       .collection<AlbumDocument>("albums")
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
-    return JSON.parse(JSON.stringify(albums));
+
+    // Get media count for each album
+    const albumsWithCount = await Promise.all(
+      albums.map(async (album) => {
+        const mediaCount = await db
+          .collection<MediaDocument>("media")
+          .countDocuments({ albumId: album._id });
+
+        return {
+          ...album,
+          mediaCount,
+        };
+      })
+    );
+
+    return albumsWithCount;
   } catch (error) {
     console.error("Error fetching albums:", error);
     return [];
@@ -76,7 +95,7 @@ export default async function Album() {
                   variant="label-default-xs"
                   style={{ color: "var(--neutral-on-background-weak)" }}
                 >
-                  {albumItem.images.length} photos
+                  {albumItem.mediaCount} photos
                 </Text>
               </Column>
             ))}

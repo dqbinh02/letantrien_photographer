@@ -14,7 +14,7 @@ export async function generateMetadata() {
 export default function Gallery() {
   return (
     <Flex maxWidth="l">
-      <GalleryView />
+      <GalleryView images={gallery.images} />
     </Flex>
   );
 }

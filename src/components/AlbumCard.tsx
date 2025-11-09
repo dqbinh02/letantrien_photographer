@@ -1,0 +1,119 @@
+"use client";
+
+import { Column, Text, Button } from "@once-ui-system/core";
+import Link from "next/link";
+import type { AlbumDocument } from "@/types";
+
+interface AlbumCardProps {
+  album: AlbumDocument;
+  mediaCount?: number;
+  onDelete?: (albumId: string) => void;
+}
+
+export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
+  const handleDelete = () => {
+    if (onDelete && album._id) {
+      onDelete(album._id.toString());
+    }
+  };
+
+  return (
+    <Column
+      gap="12"
+      padding="16"
+      radius="m"
+      background="neutral-alpha-weak"
+      style={{
+        transition: "transform 0.2s ease-in-out",
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-2px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+    >
+      {/* Album Cover */}
+      <div
+        style={{
+          width: "100%",
+          height: "200px",
+          borderRadius: "8px",
+          overflow: "hidden",
+          backgroundColor: "var(--neutral-alpha-medium)",
+        }}
+      >
+        {album.coverImage ? (
+          <img
+            src={album.coverImage}
+            alt={album.title}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "8px",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--neutral-on-background-weak)",
+            }}
+          >
+            No Cover
+          </div>
+        )}
+      </div>
+
+      {/* Album Info */}
+      <Column gap="8">
+        <Text variant="heading-strong-m" style={{ lineHeight: 1.3 }}>
+          {album.title}
+        </Text>
+
+        {album.description && (
+          <Text variant="body-default-s" onBackground="neutral-weak" style={{ lineHeight: 1.4 }}>
+            {album.description.length > 100
+              ? `${album.description.substring(0, 100)}...`
+              : album.description
+            }
+          </Text>
+        )}
+
+        <Column gap="4">
+          <Text variant="label-default-xs" onBackground="neutral-weak">
+            {mediaCount} media files
+          </Text>
+          <Text variant="label-default-xs" onBackground="neutral-weak">
+            Created {new Date(album.createdAt).toLocaleDateString()}
+          </Text>
+        </Column>
+      </Column>
+
+      {/* Action Buttons */}
+      <Column gap="8">
+        <Link href={`/admin/albums/${album._id}`} style={{ textDecoration: "none" }}>
+          <Button size="s" fillWidth>
+            View Details
+          </Button>
+        </Link>
+
+        <Button
+          size="s"
+          variant="tertiary"
+          fillWidth
+          onClick={handleDelete}
+          style={{ color: "var(--danger-on-background-strong)" }}
+        >
+          Delete Album
+        </Button>
+      </Column>
+    </Column>
+  );
+}

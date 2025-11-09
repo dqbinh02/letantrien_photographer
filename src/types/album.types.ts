@@ -13,10 +13,13 @@ export interface AlbumDocument {
   _id?: ObjectId;
   title: string;
   description: string;
-  coverImage: string;
-  images: AlbumImage[];
+  coverImage: string; // blob URL
   createdAt: Date;
   updatedAt: Date;
+  link: {
+    token: string;
+    expiresAt: Date | null;
+  };
 }
 
 export interface AlbumFormData {
@@ -24,4 +27,24 @@ export interface AlbumFormData {
   description: string;
   coverImage: string;
   images: AlbumImage[];
+}
+
+export interface MediaDocument {
+  _id?: ObjectId;
+  albumId: ObjectId;
+  url: string;      // blob URL
+  type: "image" | "video";
+  filename: string;
+  uploadedAt: Date;
+}
+
+export interface CreateAlbumRequest {
+  title: string;
+  description?: string;
+  expiresAt?: Date;
+}
+
+export interface UploadMediaRequest {
+  file: File;
+  filename: string;
 }
