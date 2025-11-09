@@ -3,6 +3,7 @@
 import { Column, Text, Button } from "@once-ui-system/core";
 import Link from "next/link";
 import type { AlbumDocument } from "@/types";
+import { CopyGalleryLinkButton } from "./CopyGalleryLinkButton";
 
 interface AlbumCardProps {
   album: AlbumDocument;
@@ -94,6 +95,18 @@ export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
             Created {new Date(album.createdAt).toLocaleDateString()}
           </Text>
         </Column>
+      </Column>
+
+      {/* Gallery Link */}
+      <Column gap="8">
+        <Text variant="label-default-s" onBackground="neutral-strong">
+          Gallery Link
+        </Text>
+        <CopyGalleryLinkButton
+          albumId={album._id?.toString() || ""}
+          token={album.link.token}
+          baseURL={typeof window !== "undefined" ? window.location.origin : ""}
+        />
       </Column>
 
       {/* Action Buttons */}

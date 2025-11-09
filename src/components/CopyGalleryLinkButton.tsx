@@ -9,10 +9,10 @@ interface CopyGalleryLinkButtonProps {
   baseURL?: string;
 }
 
-export function CopyGalleryLinkButton({ albumId, token, baseURL = "http://localhost:3000" }: CopyGalleryLinkButtonProps) {
+export function CopyGalleryLinkButton({ albumId, token, baseURL }: CopyGalleryLinkButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const galleryLink = `${baseURL}/gallery/${token}`;
+  const galleryLink = `${baseURL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/gallery/${token}`;
 
   const handleCopy = async () => {
     try {
@@ -21,6 +21,20 @@ export function CopyGalleryLinkButton({ albumId, token, baseURL = "http://localh
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Failed to copy link:", error);
+      // Fallback for older browsers or restricted environments
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = galleryLink;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackError) {
+        console.error("Fallback copy failed:", fallbackError);
+        alert("Unable to copy link. Please copy manually: " + galleryLink);
+      }
     }
   };
 
