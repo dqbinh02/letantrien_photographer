@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { UploadZone, MediaGrid, CopyGalleryLinkButton, Toast } from "@/components";
 import type { AlbumDocument, MediaDocument } from "@/types";
+import { upload } from "@vercel/blob/client";
 
 interface AlbumDetail {
   album: AlbumDocument;
@@ -71,7 +72,7 @@ export default function AlbumDetailPage() {
     setUploading(true);
     
     // Optimistic update: add placeholder items to prevent layout shift
-    const placeholderMedia: MediaDocument[] = files.map((file, idx) => ({
+    const placeholderMedia: MediaDocument[] = files.map((file) => ({
       albumId: albumDetail.album._id!,
       url: URL.createObjectURL(file), // temporary local URL
       type: file.type.startsWith("image/") ? "image" : "video",
@@ -86,32 +87,45 @@ export default function AlbumDetailPage() {
     });
 
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append("files", file);
+      // Upload files directly to Vercel Blob and save metadata
+      const uploadPromises = files.map(async (file) => {
+        // 1. Upload to Vercel Blob
+        const blob = await upload(file.name, file, {
+          access: 'public',
+          handleUploadUrl: `/api/admin/albums/${albumId}/presign-url`,
+          clientPayload: JSON.stringify({ albumId }),
+        });
+
+        // 2. Save metadata to MongoDB (since onUploadCompleted doesn't work in dev)
+        const saveResponse = await fetch(`/api/admin/albums/${albumId}/complete-upload`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: blob.url,
+            pathname: blob.pathname,
+            contentType: file.type,
+          }),
+        });
+
+        if (!saveResponse.ok) {
+          throw new Error(`Failed to save metadata for ${file.name}`);
+        }
+
+        return blob;
       });
 
-      const response = await fetch(`/api/admin/albums/${albumId}/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Refresh media only to get real URLs from server
-        await fetchMediaOnly();
-        setToast({ message: `Successfully uploaded ${result.data.length} files`, type: 'success' });
-      } else {
-        // Revert optimistic update on error
-        await fetchMediaOnly();
-        setToast({ message: result.error || "Failed to upload files", type: 'error' });
-      }
+      const results = await Promise.all(uploadPromises);
+      
+      // Refresh media to get real URLs from server
+      await fetchMediaOnly();
+      setToast({ message: `Successfully uploaded ${results.length} file${results.length > 1 ? 's' : ''}`, type: 'success' });
     } catch (error) {
       console.error("Error uploading files:", error);
       // Revert optimistic update on error
       await fetchMediaOnly();
-      setToast({ message: "Failed to upload files", type: 'error' });
+      setToast({ message: error instanceof Error ? error.message : "Failed to upload files", type: 'error' });
     } finally {
       setUploading(false);
       // Cleanup temporary URLs

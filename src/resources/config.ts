@@ -4,7 +4,7 @@ const baseURL: string = "http://localhost:3000";
 // Routes configuration
 const routes = {
   "/": true,
-  "/album": true,
+  "/album": false,
   "/gallery": true,
   "/admin": true,
 };
