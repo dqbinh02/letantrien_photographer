@@ -79,7 +79,14 @@ export default function PublicGallery(_: any) {
           columnClassName="my-masonry-grid_column"
         >
           {images.map((src, i) => (
-            <img key={i} src={src} alt={`gallery-${i}`} className="rounded-lg w-full h-auto" />
+            <img 
+              key={i} 
+              src={src} 
+              alt={`gallery-${i}`} 
+              loading="lazy"
+              decoding="async"
+              className="rounded-lg w-full h-auto" 
+            />
           ))}
         </Masonry>
       )}

@@ -72,6 +72,9 @@ export default function AlbumDetailPage() {
 
     setUploading(true);
     
+    // Create album folder path: albums/{albumTitle}-{albumId[:5]}/
+    const albumFolderPath = `albums/${albumDetail.album.title.replace(/[^a-zA-Z0-9]/g, '-')}-${albumId.slice(0, 5)}`;
+    
     // Initialize upload progress tracking
     const progressItems: UploadItem[] = files.map(file => ({
       filename: file.name,
@@ -96,7 +99,7 @@ export default function AlbumDetailPage() {
     });
 
     try {
-      // Upload files in parallel for speed
+            // Upload files in parallel for speed
       const uploadPromises = files.map(async (file, index) => {
         try {
           // Update status to uploading (batch with requestAnimationFrame to reduce re-renders)
@@ -106,8 +109,13 @@ export default function AlbumDetailPage() {
             ));
           });
 
-          // 1. Upload to Vercel Blob
-          const blob = await upload(file.name, file, {
+          // 1. Upload to Vercel Blob with custom path
+          // Format: albums/{albumTitle}-{albumId[:5]}/{timestamp}-{index}-{filename}
+          const timestamp = Date.now();
+          const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const blobPath = `${albumFolderPath}/${timestamp}-${index}-${sanitizedFilename}`;
+          
+          const blob = await upload(blobPath, file, {
             access: 'public',
             handleUploadUrl: `/api/admin/albums/${albumId}/presign-url`,
             clientPayload: JSON.stringify({ albumId }),

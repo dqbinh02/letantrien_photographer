@@ -49,6 +49,8 @@ export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
           <img
             src={album.coverImage}
             alt={album.title}
+            loading="lazy"
+            decoding="async"
             style={{
               width: "100%",
               height: "100%",

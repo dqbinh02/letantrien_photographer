@@ -106,6 +106,8 @@ const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, i
           <img
             src={media.url}
             alt={media.filename}
+            loading="lazy"
+            decoding="async"
             style={{
               width: "100%",
               height: "100%",
