@@ -14,25 +14,48 @@ export interface UploadItem {
 interface UploadProgressProps {
   items: UploadItem[];
   onClose?: () => void;
+  fadeOut?: boolean;
 }
 
 export const UploadProgress = memo(function UploadProgress({ items, onClose }: UploadProgressProps) {
   const [mounted, setMounted] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
+  useEffect(() => {
+    // Check if all uploads are complete
+    const total = items.length;
+    const completed = items.filter(i => i.status === 'success').length;
+    const failed = items.filter(i => i.status === 'error').length;
+    const allDone = completed + failed === total && total > 0;
+
+    if (allDone) {
+      // Start fade out animation after 2 seconds
+      const timer = setTimeout(() => {
+        setFadeOut(true);
+        // Call onClose after animation completes
+        setTimeout(() => {
+          onClose?.();
+        }, 300);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [items, onClose]);
+
   if (!mounted) return null;
 
   return createPortal(
-    <UploadProgressContent items={items} onClose={onClose} />,
+    <UploadProgressContent items={items} onClose={onClose} fadeOut={fadeOut} />,
     document.body
   );
 });
 
-const UploadProgressContent = memo(function UploadProgressContent({ items, onClose }: UploadProgressProps) {
+const UploadProgressContent = memo(function UploadProgressContent({ items, onClose, fadeOut = false }: UploadProgressProps) {
   const total = items.length;
   const completed = items.filter(i => i.status === 'success').length;
   const failed = items.filter(i => i.status === 'error').length;
@@ -56,7 +79,7 @@ const UploadProgressContent = memo(function UploadProgressContent({ items, onClo
         width: '360px',
         maxWidth: 'calc(100vw - 48px)',
         zIndex: 1000,
-        animation: 'slideUp 0.3s ease-out',
+        animation: fadeOut ? 'slideDown 0.3s ease-out forwards' : 'slideUp 0.3s ease-out',
       }}
     >
       {/* Header */}
@@ -233,6 +256,16 @@ const UploadProgressContent = memo(function UploadProgressContent({ items, onClo
           to {
             transform: translateY(0);
             opacity: 1;
+          }
+        }
+        @keyframes slideDown {
+          from {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateY(100%);
+            opacity: 0;
           }
         }
       `}</style>

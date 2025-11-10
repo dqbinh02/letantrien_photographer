@@ -194,10 +194,8 @@ export default function AlbumDetailPage() {
         });
       }
       
-      setToast({ 
-        message: `Successfully uploaded ${successfulUploads.length} of ${files.length} file${files.length > 1 ? 's' : ''}`, 
-        type: successfulUploads.length > 0 ? 'success' : 'error' 
-      });
+      // Progress bar will auto-hide after 2s (handled in UploadProgress component)
+      // Don't show toast for successful uploads - progress bar is enough
     } catch (error) {
       console.error("Error uploading files:", error);
       // Revert optimistic update on error
