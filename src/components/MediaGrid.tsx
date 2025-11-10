@@ -3,6 +3,7 @@
 import { Column, Text, Button, Row } from "@once-ui-system/core";
 import { FiPlay, FiTrash2, FiStar } from "react-icons/fi";
 import type { MediaDocument } from "@/types";
+import React from "react";
 
 interface MediaGridProps {
   media: MediaDocument[];
@@ -11,7 +12,7 @@ interface MediaGridProps {
   coverImage?: string;
 }
 
-export function MediaGrid({ media, onDelete, onSetCover, coverImage }: MediaGridProps) {
+export const MediaGrid = React.memo(function MediaGrid({ media, onDelete, onSetCover, coverImage }: MediaGridProps) {
   if (media.length === 0) {
     return (
       <Column gap="16" horizontal="center" padding="32">
@@ -33,9 +34,9 @@ export function MediaGrid({ media, onDelete, onSetCover, coverImage }: MediaGrid
           gap: "16px",
         }}
       >
-        {media.map((item) => (
+        {media.map((item, index) => (
           <MediaItem
-            key={item._id?.toString()}
+            key={item._id?.toString() || `temp-${item.filename}-${index}`}
             media={item}
             onDelete={onDelete}
             onSetCover={onSetCover}
@@ -45,7 +46,7 @@ export function MediaGrid({ media, onDelete, onSetCover, coverImage }: MediaGrid
       </div>
     </Column>
   );
-}
+});
 
 interface MediaItemProps {
   media: MediaDocument;
@@ -54,7 +55,7 @@ interface MediaItemProps {
   isCover?: boolean;
 }
 
-function MediaItem({ media, onDelete, onSetCover, isCover }: MediaItemProps) {
+const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, isCover }: MediaItemProps) {
   const handleDelete = () => {
     if (onDelete && media._id) {
       onDelete(media._id.toString());
@@ -176,4 +177,4 @@ function MediaItem({ media, onDelete, onSetCover, isCover }: MediaItemProps) {
       </Row>
     </Column>
   );
-}
+});

@@ -8,3 +8,5 @@ export { CopyGalleryLinkButton } from "@/components/CopyGalleryLinkButton";
 export { UploadZone } from "@/components/UploadZone";
 export { MediaGrid } from "@/components/MediaGrid";
 export { Toast } from "@/components/Toast";
+export { UploadProgress } from "@/components/UploadProgress";
+export type { UploadItem } from "@/components/UploadProgress";
