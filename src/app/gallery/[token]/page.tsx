@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Masonry from 'react-masonry-css';
+import { ImageModal } from '@/components';
 
 type MediaItem = { _id?: string; url: string; type?: string; filename?: string };
 
@@ -16,6 +17,7 @@ export default function PublicGallery(_: any) {
   const [albumDescription, setAlbumDescription] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -57,39 +59,75 @@ export default function PublicGallery(_: any) {
     768: 2,
   };
 
-  return (
-    <div
-      className="mx-auto px-4 py-8"
-      // inline style to enforce gallery max width and avoid being overridden by outer layout styles
-      style={{ maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto' }}
-    >
-      {albumTitle && <h1 className="text-2xl font-semibold mb-2">{albumTitle}</h1>}
-      {albumDescription && <p className="text-sm text-muted mb-4">{albumDescription}</p>}
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index);
+  };
 
-      {loading ? (
-        <div className="text-center py-8">Loading gallery…</div>
-      ) : error ? (
-        <div className="text-center text-red-500 py-8">{error}</div>
-      ) : images.length === 0 ? (
-        <div className="text-center py-8">No images to display</div>
-      ) : (
-        <Masonry
-          breakpointCols={breakpointColumnsObj}
-          className="my-masonry-grid"
-          columnClassName="my-masonry-grid_column"
-        >
-          {images.map((src, i) => (
-            <img 
-              key={i} 
-              src={src} 
-              alt={`gallery-${i}`} 
-              loading="lazy"
-              decoding="async"
-              className="rounded-lg w-full h-auto" 
-            />
-          ))}
-        </Masonry>
+  const handleCloseModal = () => {
+    setSelectedImageIndex(null);
+  };
+
+  const handleNext = () => {
+    if (selectedImageIndex !== null && selectedImageIndex < images.length - 1) {
+      setSelectedImageIndex(selectedImageIndex + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (selectedImageIndex !== null && selectedImageIndex > 0) {
+      setSelectedImageIndex(selectedImageIndex - 1);
+    }
+  };
+
+  return (
+    <>
+      <div
+        className="mx-auto px-4 py-8"
+        // inline style to enforce gallery max width and avoid being overridden by outer layout styles
+        style={{ maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto' }}
+      >
+        {albumTitle && <h1 className="text-2xl font-semibold mb-2">{albumTitle}</h1>}
+        {albumDescription && <p className="text-sm text-muted mb-4">{albumDescription}</p>}
+
+        {loading ? (
+          <div className="text-center py-8">Loading gallery…</div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">{error}</div>
+        ) : images.length === 0 ? (
+          <div className="text-center py-8">No images to display</div>
+        ) : (
+          <Masonry
+            breakpointCols={breakpointColumnsObj}
+            className="my-masonry-grid"
+            columnClassName="my-masonry-grid_column"
+          >
+            {images.map((src, i) => (
+              <img 
+                key={i} 
+                src={src} 
+                alt={`gallery-${i}`} 
+                loading="lazy"
+                decoding="async"
+                onClick={() => handleImageClick(i)}
+                className="rounded-lg w-full h-auto cursor-pointer hover:opacity-90 transition-opacity" 
+              />
+            ))}
+          </Masonry>
+        )}
+      </div>
+
+      {/* Image Modal */}
+      {selectedImageIndex !== null && images[selectedImageIndex] && (
+        <ImageModal
+          imageUrl={images[selectedImageIndex]}
+          alt={`gallery-${selectedImageIndex}`}
+          onClose={handleCloseModal}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          hasNext={selectedImageIndex < images.length - 1}
+          hasPrev={selectedImageIndex > 0}
+        />
       )}
-    </div>
+    </>
   );
 }

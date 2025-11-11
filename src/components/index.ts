@@ -10,3 +10,4 @@ export { MediaGrid } from "@/components/MediaGrid";
 export { Toast } from "@/components/Toast";
 export { UploadProgress } from "@/components/UploadProgress";
 export type { UploadItem } from "@/components/UploadProgress";
+export { ImageModal } from "@/components/ImageModal";
