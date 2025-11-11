@@ -70,6 +70,9 @@ export default function AlbumDetailPage() {
   const handleFilesSelected = async (files: File[]) => {
     if (!albumId || !albumDetail) return;
 
+    console.log('📤 Starting upload:', files.length, 'files');
+    console.log('📊 Current media count:', albumDetail.media.length);
+
     setUploading(true);
     
     // Create album folder path: albums/{albumTitle}-{albumId[:5]}/
@@ -147,6 +150,12 @@ export default function AlbumDetailPage() {
 
           const result = await saveResponse.json();
           
+          console.log(`✅ [${index}] Upload complete:`, {
+            filename: file.name,
+            url: result.data?.url?.substring(0, 50) + '...',
+            hasId: !!result.data?._id
+          });
+          
           // Update to success
           requestAnimationFrame(() => {
             setUploadProgress(prev => prev.map((item, i) => 
@@ -176,28 +185,46 @@ export default function AlbumDetailPage() {
       // Filter successful uploads
       const successfulUploads = results.filter(r => r !== null);
       
+      console.log('📊 Upload results:', {
+        total: files.length,
+        successful: successfulUploads.length,
+        failed: files.length - successfulUploads.length
+      });
+      
       // Update state once with all new media (smooth, no flickering)
       if (successfulUploads.length > 0 && albumDetail) {
         setAlbumDetail((prev) => {
           if (!prev) return prev;
           
-          // Create a map of placeholders to replace
-          const newMediaMap = new Map(
-            successfulUploads.map(upload => [upload!.file.name, upload!.data])
+          // Create a map by index for accurate replacement
+          const uploadsByIndex = new Map(
+            successfulUploads.map(upload => [upload!.index, upload!.data])
           );
           
-          // Replace all placeholders at once
-          const updatedMedia = prev.media.map(item => {
-            if (item.url.startsWith('blob:') && newMediaMap.has(item.filename)) {
+          // Filter out all placeholder items (blob: URLs)
+          const realMedia = prev.media.filter(item => !item.url.startsWith('blob:'));
+          
+          // Add all successful uploads
+          const newUploads = Array.from(uploadsByIndex.values());
+          
+          console.log('🔄 Updating media:', {
+            previousTotal: prev.media.length,
+            placeholders: prev.media.filter(m => m.url.startsWith('blob:')).length,
+            realMedia: realMedia.length,
+            newUploads: newUploads.length,
+            finalTotal: realMedia.length + newUploads.length
+          });
+          
+          // Cleanup blob URLs
+          prev.media.forEach(item => {
+            if (item.url.startsWith('blob:')) {
               URL.revokeObjectURL(item.url);
-              return newMediaMap.get(item.filename)!;
             }
-            return item;
           });
           
           return {
             ...prev,
-            media: updatedMedia,
+            media: [...realMedia, ...newUploads],
           };
         });
       }
@@ -279,6 +306,42 @@ export default function AlbumDetailPage() {
     setUploadProgress([]);
   }, []);
 
+  const handleCleanupDuplicates = useCallback(async () => {
+    if (!confirm("This will remove duplicate media entries from the database. Continue?")) {
+      return;
+    }
+
+    try {
+      setToast({ message: "Cleaning up duplicates...", type: 'info' });
+      
+      const response = await fetch(`/api/admin/albums/${albumId}/cleanup-duplicates`, {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const { duplicatesRemoved, totalMedia } = result.data;
+        
+        if (duplicatesRemoved > 0) {
+          setToast({ 
+            message: `Removed ${duplicatesRemoved} duplicate entries. Refreshing...`, 
+            type: 'success' 
+          });
+          // Refresh the page to show updated list
+          await fetchAlbumDetail();
+        } else {
+          setToast({ message: "No duplicates found!", type: 'success' });
+        }
+      } else {
+        setToast({ message: result.error || "Failed to cleanup duplicates", type: 'error' });
+      }
+    } catch (error) {
+      console.error("Error cleaning up duplicates:", error);
+      setToast({ message: "Failed to cleanup duplicates", type: 'error' });
+    }
+  }, [albumId, fetchAlbumDetail]);
+
   if (loading) {
     return (
       <Column maxWidth="l" paddingTop="24" gap="24" horizontal="center">
@@ -327,7 +390,17 @@ export default function AlbumDetailPage() {
 
       {/* Album Info */}
       <Column gap="8" padding="16" radius="m" background="neutral-alpha-weak">
-        <Text variant="label-default-s">Album Information</Text>
+        <Row horizontal="between" vertical="center">
+          <Text variant="label-default-s">Album Information</Text>
+          <Button 
+            size="s" 
+            variant="tertiary"
+            onClick={handleCleanupDuplicates}
+            style={{ fontSize: '12px' }}
+          >
+            🧹 Cleanup Duplicates
+          </Button>
+        </Row>
         <Row gap="24">
           <Column gap="4">
             <Text variant="body-default-xs" onBackground="neutral-weak">

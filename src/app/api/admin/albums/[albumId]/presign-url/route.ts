@@ -65,36 +65,11 @@ export async function POST(
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // This runs after successful upload - save metadata to MongoDB
-        try {
-          const payload = tokenPayload ? JSON.parse(tokenPayload) : {};
-          const albumIdFromToken = payload.albumId;
-
-          if (!albumIdFromToken || !ObjectId.isValid(albumIdFromToken)) {
-            console.error("Invalid albumId in token payload");
-            return;
-          }
-
-          const { db } = await connectToDatabase();
-
-          // Create media document
-          const media: Omit<MediaDocument, "_id"> = {
-            albumId: new ObjectId(albumIdFromToken),
-            url: blob.url,
-            type: blob.contentType?.startsWith("image/") ? "image" : "video",
-            filename: blob.pathname,
-            uploadedAt: new Date(),
-          };
-
-          // Save to MongoDB
-          await db.collection<MediaDocument>("media").insertOne(media as MediaDocument);
-
-          console.log(`✅ Saved media metadata for: ${blob.pathname}`);
-        } catch (error) {
-          console.error("❌ Error saving media metadata:", error);
-          // Don't throw - the blob upload already succeeded
-          // The client can retry saving metadata if needed
-        }
+        // NOTE: This callback works on Vercel production but NOT in local development
+        // For consistency, we use a separate complete-upload endpoint instead
+        // This prevents duplicate inserts and works in both environments
+        console.log(`✅ Upload completed to blob: ${blob.pathname}`);
+        console.log(`⚠️  Metadata will be saved via /complete-upload endpoint`);
       },
     });
 
