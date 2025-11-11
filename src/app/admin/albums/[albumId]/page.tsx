@@ -185,12 +185,6 @@ export default function AlbumDetailPage() {
       // Filter successful uploads
       const successfulUploads = results.filter(r => r !== null);
       
-      console.log('📊 Upload results:', {
-        total: files.length,
-        successful: successfulUploads.length,
-        failed: files.length - successfulUploads.length
-      });
-      
       // Update state once with all new media (smooth, no flickering)
       if (successfulUploads.length > 0 && albumDetail) {
         setAlbumDetail((prev) => {
@@ -206,14 +200,6 @@ export default function AlbumDetailPage() {
           
           // Add all successful uploads
           const newUploads = Array.from(uploadsByIndex.values());
-          
-          console.log('🔄 Updating media:', {
-            previousTotal: prev.media.length,
-            placeholders: prev.media.filter(m => m.url.startsWith('blob:')).length,
-            realMedia: realMedia.length,
-            newUploads: newUploads.length,
-            finalTotal: realMedia.length + newUploads.length
-          });
           
           // Cleanup blob URLs
           prev.media.forEach(item => {
@@ -306,42 +292,6 @@ export default function AlbumDetailPage() {
     setUploadProgress([]);
   }, []);
 
-  const handleCleanupDuplicates = useCallback(async () => {
-    if (!confirm("This will remove duplicate media entries from the database. Continue?")) {
-      return;
-    }
-
-    try {
-      setToast({ message: "Cleaning up duplicates...", type: 'info' });
-      
-      const response = await fetch(`/api/admin/albums/${albumId}/cleanup-duplicates`, {
-        method: "POST",
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const { duplicatesRemoved, totalMedia } = result.data;
-        
-        if (duplicatesRemoved > 0) {
-          setToast({ 
-            message: `Removed ${duplicatesRemoved} duplicate entries. Refreshing...`, 
-            type: 'success' 
-          });
-          // Refresh the page to show updated list
-          await fetchAlbumDetail();
-        } else {
-          setToast({ message: "No duplicates found!", type: 'success' });
-        }
-      } else {
-        setToast({ message: result.error || "Failed to cleanup duplicates", type: 'error' });
-      }
-    } catch (error) {
-      console.error("Error cleaning up duplicates:", error);
-      setToast({ message: "Failed to cleanup duplicates", type: 'error' });
-    }
-  }, [albumId, fetchAlbumDetail]);
-
   if (loading) {
     return (
       <Column maxWidth="l" paddingTop="24" gap="24" horizontal="center">
@@ -390,17 +340,7 @@ export default function AlbumDetailPage() {
 
       {/* Album Info */}
       <Column gap="8" padding="16" radius="m" background="neutral-alpha-weak">
-        <Row horizontal="between" vertical="center">
-          <Text variant="label-default-s">Album Information</Text>
-          <Button 
-            size="s" 
-            variant="tertiary"
-            onClick={handleCleanupDuplicates}
-            style={{ fontSize: '12px' }}
-          >
-            🧹 Cleanup Duplicates
-          </Button>
-        </Row>
+        <Text variant="label-default-s">Album Information</Text>
         <Row gap="24">
           <Column gap="4">
             <Text variant="body-default-xs" onBackground="neutral-weak">

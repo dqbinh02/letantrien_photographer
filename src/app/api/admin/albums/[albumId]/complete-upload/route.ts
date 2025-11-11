@@ -42,23 +42,6 @@ export async function POST(
       );
     }
 
-    // Check if media with same URL already exists to prevent duplicates
-    const existingMedia = await db
-      .collection<MediaDocument>("media")
-      .findOne({ 
-        albumId: new ObjectId(albumId),
-        url: url 
-      });
-
-    if (existingMedia) {
-      console.log(`⚠️  Media already exists: ${pathname}`);
-      // Return existing media instead of creating duplicate
-      return NextResponse.json({
-        success: true,
-        data: existingMedia,
-      });
-    }
-
     // Save metadata to MongoDB
     const media: Omit<MediaDocument, "_id"> = {
       albumId: new ObjectId(albumId),
@@ -69,8 +52,6 @@ export async function POST(
     };
 
     const result = await db.collection<MediaDocument>("media").insertOne(media as MediaDocument);
-
-    console.log(`✅ Saved media metadata for: ${pathname}`);
 
     return NextResponse.json({
       success: true,

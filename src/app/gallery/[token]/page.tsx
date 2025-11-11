@@ -25,8 +25,6 @@ export default function PublicGallery(_: any) {
     setLoading(true);
     setError(null);
 
-    console.log('🔄 Fetching album with token:', token);
-
     fetch(`/api/albums/${token}`)
       .then(async (res) => {
         const json = await res.json().catch(() => ({}));
@@ -34,32 +32,17 @@ export default function PublicGallery(_: any) {
         return json;
       })
       .then((data) => {
-        if (cancelled) {
-          console.log('⚠️ Request cancelled, ignoring response');
-          return;
-        }
+        if (cancelled) return;
         
         const media: MediaItem[] = data?.data?.media || [];
-        
-        console.log('📦 Raw media from API:', media.length, 'items');
         
         // Filter images and remove duplicates based on URL
         const imgs = media
           .filter((m) => m.type !== 'video')
           .map((m) => m.url);
         
-        console.log('🖼️ Images after filter:', imgs.length);
-        
         // Remove duplicate URLs
         const uniqueImages = Array.from(new Set(imgs));
-        
-        console.log('✨ Unique images:', uniqueImages.length);
-        
-        // Check for duplicates
-        if (imgs.length !== uniqueImages.length) {
-          console.warn(`⚠️ Found ${imgs.length - uniqueImages.length} duplicate images in API response!`);
-          console.warn('Duplicate URLs:', imgs.filter((url, index) => imgs.indexOf(url) !== index));
-        }
         
         setImages(uniqueImages);
         setAlbumTitle(data?.data?.album?.title || null);
@@ -67,7 +50,6 @@ export default function PublicGallery(_: any) {
       })
       .catch((err: any) => {
         if (cancelled) return;
-        console.error('❌ Error fetching album:', err);
         setError(err?.message || 'Failed to load album');
       })
       .finally(() => {
@@ -75,7 +57,6 @@ export default function PublicGallery(_: any) {
       });
 
     return () => {
-      console.log('🧹 Cleanup: cancelling request');
       cancelled = true;
     };
   }, [token]);

@@ -39,18 +39,6 @@ export async function GET(
       .sort({ uploadedAt: 1 })
       .toArray();
 
-    console.log(`📊 Album ${album.title} (${album._id}): Found ${media.length} media items`);
-    
-    // Check for duplicates in database
-    const urls = media.map(m => m.url);
-    const uniqueUrls = new Set(urls);
-    if (urls.length !== uniqueUrls.size) {
-      console.warn(`⚠️ WARNING: Album has ${urls.length - uniqueUrls.size} duplicate media entries in database!`);
-      // Log the duplicate URLs
-      const duplicates = urls.filter((url, index) => urls.indexOf(url) !== index);
-      console.warn('Duplicate URLs:', [...new Set(duplicates)]);
-    }
-
     return NextResponse.json({ success: true, data: { album, media } });
   } catch (error) {
     console.error('Error fetching album by token:', error);
