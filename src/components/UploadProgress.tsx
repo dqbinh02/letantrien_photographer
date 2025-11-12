@@ -59,7 +59,6 @@ const UploadProgressContent = memo(function UploadProgressContent({ items, onClo
   const total = items.length;
   const completed = items.filter(i => i.status === 'success').length;
   const failed = items.filter(i => i.status === 'error').length;
-  const uploading = items.filter(i => i.status === 'uploading').length;
 
   const overallProgress = total > 0 ? (completed / total) * 100 : 0;
   const allDone = completed + failed === total;
@@ -94,6 +93,7 @@ const UploadProgressContent = memo(function UploadProgressContent({ items, onClo
         </Column>
         {allDone && onClose && (
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: 'transparent',
@@ -145,9 +145,9 @@ const UploadProgressContent = memo(function UploadProgressContent({ items, onClo
           overflowX: 'hidden',
         }}
       >
-        {items.map((item, index) => (
+        {items.map((item) => (
           <Row
-            key={index}
+            key={`${item.filename}-${item.status}`}
             gap="12"
             padding="12"
             radius="m"

@@ -8,6 +8,7 @@ import type { AlbumDocument } from "@/types";
 
 interface AlbumWithCount extends AlbumDocument {
   mediaCount: number;
+  publishedMediaCount: number;
 }
 
 export default function AdminDashboard() {
@@ -114,6 +115,7 @@ export default function AdminDashboard() {
               key={album._id?.toString()}
               album={album}
               mediaCount={album.mediaCount}
+              publishedMediaCount={album.publishedMediaCount}
               onDelete={handleDeleteAlbum}
             />
           ))}

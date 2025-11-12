@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback } from "react";
 import { FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import NextImage from "next/image";
 
 interface ImageModalProps {
   imageUrl: string;
@@ -63,6 +64,8 @@ export function ImageModal({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       style={{
         position: 'fixed',
         top: 0,
@@ -78,9 +81,13 @@ export function ImageModal({
         animation: 'fadeIn 0.2s ease-out',
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') onClose();
+      }}
     >
       {/* Close Button */}
       <button
+        type="button"
         onClick={onClose}
         title="Close (Esc)"
         style={{
@@ -103,6 +110,7 @@ export function ImageModal({
       {/* Previous Button */}
       {hasPrev && onPrev && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onPrev();
@@ -130,6 +138,7 @@ export function ImageModal({
       {/* Next Button */}
       {hasNext && onNext && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onNext();
@@ -155,19 +164,25 @@ export function ImageModal({
       )}
 
       {/* Image */}
-      <img
-        src={imageUrl}
-        alt={alt}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          maxWidth: '90vw',
-          maxHeight: '90vh',
-          objectFit: 'contain',
-          borderRadius: '8px',
-          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-          animation: 'zoomIn 0.2s ease-out',
-        }}
-      />
+      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+        <NextImage
+          src={imageUrl}
+          alt={alt || "Gallery image"}
+          width={1920}
+          height={1080}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          style={{
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+            borderRadius: '8px',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+            animation: 'zoomIn 0.2s ease-out',
+          }}
+        />
+      </div>
 
       <style jsx>{`
         @keyframes fadeIn {

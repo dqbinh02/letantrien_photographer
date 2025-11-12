@@ -43,8 +43,14 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: {
-        album,
-        media,
+        album: {
+          ...album,
+          isPublished: album.isPublished ?? false,
+        },
+        media: media.map((item) => ({
+          ...item,
+          isPublished: item.isPublished ?? false,
+        })),
       },
     });
   } catch (error) {
@@ -102,6 +108,98 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Error updating album:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update album" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT /api/admin/albums/[albumId] - Replace editable album fields
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ albumId: string }> }
+) {
+  try {
+    const { db } = await connectToDatabase();
+    const { albumId } = await params;
+    const body = await request.json();
+
+    if (!ObjectId.isValid(albumId)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid album ID" },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Partial<AlbumDocument> = {
+      updatedAt: new Date(),
+    };
+
+    if (body.title !== undefined) {
+      if (typeof body.title !== "string" || body.title.trim().length === 0) {
+        return NextResponse.json(
+          { success: false, error: "Title must be a non-empty string" },
+          { status: 400 }
+        );
+      }
+      updateData.title = body.title.trim();
+    }
+
+    if (body.description !== undefined) {
+      if (typeof body.description !== "string") {
+        return NextResponse.json(
+          { success: false, error: "Description must be a string" },
+          { status: 400 }
+        );
+      }
+      updateData.description = body.description;
+    }
+
+    if (body.isPublished !== undefined) {
+      if (typeof body.isPublished !== "boolean") {
+        return NextResponse.json(
+          { success: false, error: "isPublished must be a boolean" },
+          { status: 400 }
+        );
+      }
+      updateData.isPublished = body.isPublished;
+    }
+
+    const result = await db
+      .collection<AlbumDocument>("albums")
+      .updateOne(
+        { _id: new ObjectId(albumId) },
+        { $set: updateData }
+      );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { success: false, error: "Album not found" },
+        { status: 404 }
+      );
+    }
+
+    const updatedAlbum = await db
+      .collection<AlbumDocument>("albums")
+      .findOne({ _id: new ObjectId(albumId) });
+
+    if (!updatedAlbum) {
+      return NextResponse.json(
+        { success: false, error: "Album not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...updatedAlbum,
+        isPublished: updatedAlbum.isPublished ?? false,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating album via PUT:", error);
     return NextResponse.json(
       { success: false, error: "Failed to update album" },
       { status: 500 }

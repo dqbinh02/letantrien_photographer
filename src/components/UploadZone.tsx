@@ -1,7 +1,8 @@
 "use client";
 
-import { Column, Text, Button } from "@once-ui-system/core";
-import { useState, useRef, DragEvent, ChangeEvent } from "react";
+import { Column, Text } from "@once-ui-system/core";
+import { useState, useRef } from "react";
+import type { DragEvent, ChangeEvent } from "react";
 import { FiUpload, FiImage, FiVideo } from "react-icons/fi";
 
 interface UploadZoneProps {
@@ -55,7 +56,7 @@ export function UploadZone({
     );
 
     // If maxFiles is provided, limit; otherwise accept all
-    const limitedFiles = typeof maxFiles === "number" && isFinite(maxFiles)
+    const limitedFiles = typeof maxFiles === "number" && Number.isFinite(maxFiles)
       ? validFiles.slice(0, maxFiles)
       : validFiles;
 
@@ -75,6 +76,14 @@ export function UploadZone({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        role="button"
+        tabIndex={0}
         style={{
           border: `2px dashed ${isDragOver ? 'var(--accent-border-strong)' : 'var(--neutral-border-medium)'}`,
           borderRadius: 'var(--radius-l)',
@@ -101,7 +110,7 @@ export function UploadZone({
               or click to select files
             </Text>
             <Text variant="label-default-xs" onBackground="neutral-weak">
-              {typeof maxFiles === 'number' && isFinite(maxFiles)
+              {typeof maxFiles === 'number' && Number.isFinite(maxFiles)
                 ? `Supports images and videos (max ${maxFiles} files)`
                 : 'Supports images and videos (no limit)'}
             </Text>

@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { ObjectId } from "mongodb";
-import type { MediaDocument } from "@/types";
 
 // POST /api/admin/albums/[albumId]/presign-url - Generate pre-signed URLs and save metadata on upload completion
 export async function POST(
@@ -64,12 +63,12 @@ export async function POST(
           }),
         };
       },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
+      onUploadCompleted: async ({ blob }) => {
         // NOTE: This callback works on Vercel production but NOT in local development
         // For consistency, we use a separate complete-upload endpoint instead
         // This prevents duplicate inserts and works in both environments
-        console.log(`✅ Upload completed to blob: ${blob.pathname}`);
-        console.log(`⚠️  Metadata will be saved via /complete-upload endpoint`);
+        console.log('✅ Upload completed to blob:', blob.pathname);
+        console.log('⚠️  Metadata will be saved via /complete-upload endpoint');
       },
     });
 

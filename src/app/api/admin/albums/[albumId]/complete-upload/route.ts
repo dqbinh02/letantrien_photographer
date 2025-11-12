@@ -48,6 +48,7 @@ export async function POST(
       url,
       type: contentType?.startsWith("image/") ? "image" : "video",
       filename: pathname,
+      isPublished: true,
       uploadedAt: new Date(),
     };
 

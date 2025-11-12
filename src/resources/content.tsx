@@ -1,4 +1,4 @@
-import { Album, Gallery, Person, Social } from "@/types";
+import type { Album, Gallery, Person, Social } from "@/types";
 
 const person: Person = {
   firstName: "Lê Tấn",
@@ -30,10 +30,10 @@ const album: Album = {
 };
 
 const gallery: Gallery = {
-  path: "/gallery",
-  label: "Gallery",
-  title: `Photo Gallery – ${person.name}`,
-  description: `A photo collection by ${person.name}`,
+  path: "/albums",
+  label: "Albums",
+  title: `Photo Albums – ${person.name}`,
+  description: `Browse published photo albums by ${person.name}`,
   images: [
     {
       src: "/images/gallery/horizontal-1.jpg",

@@ -12,7 +12,7 @@ interface CopyGalleryLinkButtonProps {
 export function CopyGalleryLinkButton({ albumId, token, baseURL }: CopyGalleryLinkButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const galleryLink = `${baseURL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/gallery/${token}`;
+  const galleryLink = `${baseURL || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/albums/${albumId}?token=${token}`;
 
   const handleCopy = async () => {
     try {
@@ -33,7 +33,7 @@ export function CopyGalleryLinkButton({ albumId, token, baseURL }: CopyGalleryLi
         setTimeout(() => setCopied(false), 2000);
       } catch (fallbackError) {
         console.error("Fallback copy failed:", fallbackError);
-        alert("Unable to copy link. Please copy manually: " + galleryLink);
+        alert(`Unable to copy link. Please copy manually: ${galleryLink}`);
       }
     }
   };

@@ -14,6 +14,7 @@ export interface AlbumDocument {
   title: string;
   description: string;
   coverImage: string; // blob URL
+  isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
   link: {
@@ -27,6 +28,7 @@ export interface AlbumFormData {
   description: string;
   coverImage: string;
   images: AlbumImage[];
+  isPublished?: boolean;
 }
 
 export interface MediaDocument {
@@ -35,12 +37,14 @@ export interface MediaDocument {
   url: string;      // blob URL
   type: "image" | "video";
   filename: string;
+  isPublished: boolean;
   uploadedAt: Date;
 }
 
 export interface CreateAlbumRequest {
   title: string;
   description?: string;
+  isPublished?: boolean;
   expiresAt?: Date;
 }
 

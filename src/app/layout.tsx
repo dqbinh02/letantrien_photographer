@@ -6,7 +6,7 @@ import classNames from "classnames";
 import { Background, Column, Flex, Meta, RevealFx } from "@once-ui-system/core";
 import type { opacity, SpacingToken } from "@once-ui-system/core";
 import { Footer, Header, Providers, ThemeInitScript } from "@/components";
-import { baseURL, effects, fonts, style, dataStyle } from "@/resources";
+import { baseURL, effects, fonts } from "@/resources";
 
 export async function generateMetadata() {
   return Meta.generate({

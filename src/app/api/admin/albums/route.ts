@@ -2,7 +2,7 @@ import { connectToDatabase } from "@/lib/mongodb";
 import type { AlbumDocument, CreateAlbumRequest, MediaDocument } from "@/types";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
 
 // GET /api/admin/albums - List all albums with media count
 export async function GET() {
@@ -22,10 +22,16 @@ export async function GET() {
         const mediaCount = await db
           .collection<MediaDocument>("media")
           .countDocuments({ albumId: album._id });
+        
+        const publishedMediaCount = await db
+          .collection<MediaDocument>("media")
+          .countDocuments({ albumId: album._id, isPublished: true });
 
         return {
           ...album,
+          isPublished: album.isPublished ?? false,
           mediaCount,
+          publishedMediaCount,
         };
       })
     );
@@ -43,8 +49,8 @@ export async function GET() {
 // POST /api/admin/albums - Create new album
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateAlbumRequest = await request.json();
-    const { title, description, expiresAt } = body;
+  const body: CreateAlbumRequest = await request.json();
+  const { title, description, expiresAt, isPublished } = body;
 
     if (!title || title.trim().length === 0) {
       return NextResponse.json(
@@ -62,6 +68,7 @@ export async function POST(request: NextRequest) {
       title: title.trim(),
       description: description?.trim() || "",
       coverImage: "",
+      isPublished: Boolean(isPublished),
       createdAt: new Date(),
       updatedAt: new Date(),
       link: {

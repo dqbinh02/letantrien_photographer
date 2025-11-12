@@ -1,7 +1,8 @@
 "use client";
 
 import { Column, Text, Button, Row } from "@once-ui-system/core";
-import { FiPlay, FiTrash2, FiStar } from "react-icons/fi";
+import Image from "next/image";
+import { FiPlay, FiTrash2, FiStar, FiLock, FiUnlock } from "react-icons/fi";
 import type { MediaDocument } from "@/types";
 import React, { useState } from "react";
 import { ImageModal } from "./ImageModal";
@@ -10,10 +11,11 @@ interface MediaGridProps {
   media: MediaDocument[];
   onDelete?: (mediaId: string) => void;
   onSetCover?: (mediaUrl: string) => void;
+  onTogglePublish?: (mediaId: string, nextState: boolean) => void;
   coverImage?: string;
 }
 
-export const MediaGrid = React.memo(function MediaGrid({ media, onDelete, onSetCover, coverImage }: MediaGridProps) {
+export const MediaGrid = React.memo(function MediaGrid({ media, onDelete, onSetCover, onTogglePublish, coverImage }: MediaGridProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   // Filter only images for modal navigation
@@ -61,7 +63,7 @@ export const MediaGrid = React.memo(function MediaGrid({ media, onDelete, onSetC
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-            gap: "16px",
+            gap: "8px",
           }}
         >
           {media.map((item, index) => (
@@ -70,6 +72,7 @@ export const MediaGrid = React.memo(function MediaGrid({ media, onDelete, onSetC
               media={item}
               onDelete={onDelete}
               onSetCover={onSetCover}
+              onTogglePublish={onTogglePublish}
               isCover={coverImage === item.url}
               onClick={() => handleImageClick(item)}
             />
@@ -97,11 +100,12 @@ interface MediaItemProps {
   media: MediaDocument;
   onDelete?: (mediaId: string) => void;
   onSetCover?: (mediaUrl: string) => void;
+  onTogglePublish?: (mediaId: string, nextState: boolean) => void;
   isCover?: boolean;
   onClick?: () => void;
 }
 
-const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, isCover, onClick }: MediaItemProps) {
+const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, onTogglePublish, isCover, onClick }: MediaItemProps) {
   const handleDelete = () => {
     if (onDelete && media._id) {
       onDelete(media._id.toString());
@@ -114,7 +118,15 @@ const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, i
     }
   };
 
+  const handleTogglePublish = () => {
+    if (onTogglePublish && media._id) {
+      const nextState = !media.isPublished;
+      onTogglePublish(media._id.toString(), nextState);
+    }
+  };
+
   const isVideo = media.type === "video";
+  const isPublished = media.isPublished ?? false;
 
   return (
     <Column
@@ -125,8 +137,10 @@ const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, i
       style={{ position: "relative" }}
     >
       {/* Media Thumbnail */}
-      <div
+      <button
+        type="button"
         onClick={onClick}
+        disabled={isVideo}
         style={{
           width: "100%",
           height: "150px",
@@ -135,6 +149,8 @@ const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, i
           backgroundColor: "var(--neutral-alpha-medium)",
           position: "relative",
           cursor: isVideo ? "default" : "pointer",
+          border: "none",
+          padding: 0,
         }}
       >
         {isVideo ? (
@@ -151,14 +167,13 @@ const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, i
             <FiPlay size={32} style={{ color: "var(--neutral-on-background-weak)" }} />
           </div>
         ) : (
-          <img
+          <Image
             src={media.url}
             alt={media.filename}
+            fill
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             loading="lazy"
-            decoding="async"
             style={{
-              width: "100%",
-              height: "100%",
               objectFit: "cover",
             }}
           />
@@ -183,18 +198,36 @@ const MediaItem = React.memo(function MediaItem({ media, onDelete, onSetCover, i
             <FiStar size={12} style={{ color: "var(--accent-on-background-strong)" }} />
           </div>
         )}
-      </div>
+      </button>
 
       {/* Media Info */}
       <Column gap="4">
-        <Text variant="body-default-s" style={{ fontWeight: 500, lineHeight: 1.3 }}>
-          {media.filename.length > 20
-            ? `${media.filename.substring(0, 20)}...`
-            : media.filename
-          }
-        </Text>
+        <Row horizontal="between" vertical="center">
+          <Text variant="body-default-s" style={{ fontWeight: 500, lineHeight: 1.3, flex: 1 }}>
+            {media.filename.length > 20
+              ? `${media.filename.substring(0, 20)}...`
+              : media.filename
+            }
+          </Text>
+          {onTogglePublish && (
+            <Button
+              size="s"
+              variant="tertiary"
+              onClick={handleTogglePublish}
+              style={{ padding: "4px" }}
+              aria-label={isPublished ? "Unpublish media" : "Publish media"}
+            >
+              {isPublished ? (
+                <FiUnlock size={14} style={{ color: "var(--accent-on-background-strong)" }} />
+              ) : (
+                <FiLock size={14} style={{ color: "var(--neutral-on-background-weak)" }} />
+              )}
+            </Button>
+          )}
+        </Row>
         <Text variant="label-default-xs" onBackground="neutral-weak">
           {media.type} • {new Date(media.uploadedAt).toLocaleDateString()}
+          {isPublished && " • Published"}
         </Text>
       </Column>
 

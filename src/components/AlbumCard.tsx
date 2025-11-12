@@ -1,22 +1,27 @@
 "use client";
 
-import { Column, Text, Button } from "@once-ui-system/core";
+import { Column, Text, Button, Row } from "@once-ui-system/core";
 import Link from "next/link";
+import Image from "next/image";
+import { FiLock, FiUnlock } from "react-icons/fi";
 import type { AlbumDocument } from "@/types";
 import { CopyGalleryLinkButton } from "./CopyGalleryLinkButton";
 
 interface AlbumCardProps {
   album: AlbumDocument;
   mediaCount?: number;
+  publishedMediaCount?: number;
   onDelete?: (albumId: string) => void;
 }
 
-export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
+export function AlbumCard({ album, mediaCount = 0, publishedMediaCount, onDelete }: AlbumCardProps) {
   const handleDelete = () => {
     if (onDelete && album._id) {
       onDelete(album._id.toString());
     }
   };
+
+  const displayPublishedCount = publishedMediaCount !== undefined ? publishedMediaCount : mediaCount;
 
   return (
     <Column
@@ -43,17 +48,17 @@ export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
           borderRadius: "8px",
           overflow: "hidden",
           backgroundColor: "var(--neutral-alpha-medium)",
+          position: "relative",
         }}
       >
         {album.coverImage ? (
-          <img
+          <Image
             src={album.coverImage}
             alt={album.title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             loading="lazy"
-            decoding="async"
             style={{
-              width: "100%",
-              height: "100%",
               objectFit: "cover",
               borderRadius: "8px",
             }}
@@ -76,9 +81,36 @@ export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
 
       {/* Album Info */}
       <Column gap="8">
-        <Text variant="heading-strong-m" style={{ lineHeight: 1.3 }}>
-          {album.title}
-        </Text>
+        <Row horizontal="between" vertical="center">
+          <Text variant="heading-strong-m" style={{ lineHeight: 1.3 }}>
+            {album.title}
+          </Text>
+          <Row 
+            gap="4" 
+            vertical="center"
+            padding="4"
+            paddingLeft="8"
+            paddingRight="8"
+            radius="s"
+            background={album.isPublished ? "success-alpha-weak" : "neutral-alpha-medium"}
+          >
+            {album.isPublished ? (
+              <FiUnlock size={14} style={{ color: "var(--success-on-background-strong)" }} />
+            ) : (
+              <FiLock size={14} style={{ color: "var(--neutral-on-background-medium)" }} />
+            )}
+            <Text 
+              variant="label-default-xs" 
+              style={{ 
+                color: album.isPublished 
+                  ? "var(--success-on-background-strong)" 
+                  : "var(--neutral-on-background-medium)"
+              }}
+            >
+              {album.isPublished ? "Public" : "Private"}
+            </Text>
+          </Row>
+        </Row>
 
         {album.description && (
           <Text variant="body-default-s" onBackground="neutral-weak" style={{ lineHeight: 1.4 }}>
@@ -91,7 +123,10 @@ export function AlbumCard({ album, mediaCount = 0, onDelete }: AlbumCardProps) {
 
         <Column gap="4">
           <Text variant="label-default-xs" onBackground="neutral-weak">
-            {mediaCount} media files
+            {publishedMediaCount !== undefined 
+              ? `${displayPublishedCount}/${mediaCount} published`
+              : `${mediaCount} media files`
+            }
           </Text>
           <Text variant="label-default-xs" onBackground="neutral-weak">
             Created {new Date(album.createdAt).toLocaleDateString()}

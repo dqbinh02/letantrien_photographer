@@ -1,9 +1,10 @@
 "use client";
 
-import { Column, Heading, Button, Text, Row } from "@once-ui-system/core";
+import { Column, Heading, Button, Text, Row, Input, Textarea } from "@once-ui-system/core";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import { FiLock, FiUnlock } from "react-icons/fi";
 import { UploadZone, MediaGrid, CopyGalleryLinkButton, Toast, UploadProgress, type UploadItem } from "@/components";
 import type { AlbumDocument, MediaDocument } from "@/types";
 import { upload } from "@vercel/blob/client";
@@ -15,7 +16,6 @@ interface AlbumDetail {
 
 export default function AlbumDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const albumId = params.albumId as string;
 
   const [albumDetail, setAlbumDetail] = useState<AlbumDetail | null>(null);
@@ -24,14 +24,12 @@ export default function AlbumDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadItem[]>([]);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (albumId) {
-      fetchAlbumDetail();
-    }
-  }, [albumId]);
-
-  const fetchAlbumDetail = async () => {
+  const fetchAlbumDetail = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/albums/${albumId}`);
@@ -39,6 +37,8 @@ export default function AlbumDetailPage() {
 
       if (result.success) {
         setAlbumDetail(result.data);
+        setEditingTitle(result.data.album.title);
+        setEditingDescription(result.data.album.description || "");
       } else {
         setError(result.error || "Failed to fetch album");
       }
@@ -48,24 +48,34 @@ export default function AlbumDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [albumId]);
 
-  const fetchMediaOnly = async () => {
+  const fetchMediaOnly = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/albums/${albumId}`);
       const result = await response.json();
 
-      if (result.success && albumDetail) {
-        // Only update media, keep album info unchanged
-        setAlbumDetail({
-          ...albumDetail,
-          media: result.data.media,
+      if (result.success) {
+        setAlbumDetail((previous) => {
+          if (!previous) {
+            return previous;
+          }
+          return {
+            ...previous,
+            media: result.data.media,
+          };
         });
       }
     } catch (error) {
       console.error("Error fetching media:", error);
     }
-  };
+  }, [albumId]);
+
+  useEffect(() => {
+    if (albumId) {
+      void fetchAlbumDetail();
+    }
+  }, [albumId, fetchAlbumDetail]);
 
   const handleFilesSelected = async (files: File[]) => {
     if (!albumId || !albumDetail) return;
@@ -87,11 +97,19 @@ export default function AlbumDetailPage() {
     setUploadProgress(progressItems);
     
     // Optimistic update: add placeholder items to prevent layout shift
+    const albumMongoId = albumDetail.album._id;
+    if (!albumMongoId) {
+      setToast({ message: "Album is missing an identifier", type: 'error' });
+      setUploading(false);
+      return;
+    }
+
     const placeholderMedia: MediaDocument[] = files.map((file) => ({
-      albumId: albumDetail.album._id!,
+      albumId: albumMongoId,
       url: URL.createObjectURL(file), // temporary local URL
       type: file.type.startsWith("image/") ? "image" : "video",
       filename: file.name,
+      isPublished: true,
       uploadedAt: new Date(),
     }));
 
@@ -118,63 +136,87 @@ export default function AlbumDetailPage() {
           const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
           const blobPath = `${albumFolderPath}/${timestamp}-${index}-${sanitizedFilename}`;
           
-          const blob = await upload(blobPath, file, {
-            access: 'public',
-            handleUploadUrl: `/api/admin/albums/${albumId}/presign-url`,
-            clientPayload: JSON.stringify({ albumId }),
-          });
+          // Add timeout handling with AbortController
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+          
+          try {
+            const blob = await upload(blobPath, file, {
+              access: 'public',
+              handleUploadUrl: `/api/admin/albums/${albumId}/presign-url`,
+              clientPayload: JSON.stringify({ albumId }),
+            });
+            
+            clearTimeout(timeoutId);
 
-          // Update progress
-          requestAnimationFrame(() => {
-            setUploadProgress(prev => prev.map((item, i) => 
-              i === index ? { ...item, progress: 60 } : item
-            ));
-          });
+            // Update progress
+            requestAnimationFrame(() => {
+              setUploadProgress(prev => prev.map((item, i) => 
+                i === index ? { ...item, progress: 60 } : item
+              ));
+            });
 
-          // 2. Save metadata to MongoDB
-          const saveResponse = await fetch(`/api/admin/albums/${albumId}/complete-upload`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: blob.url,
-              pathname: blob.pathname,
-              contentType: file.type,
-            }),
-          });
+            // 2. Save metadata to MongoDB with timeout
+            const saveResponse = await Promise.race([
+              fetch(`/api/admin/albums/${albumId}/complete-upload`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  url: blob.url,
+                  pathname: blob.pathname,
+                  contentType: file.type,
+                }),
+              }),
+              new Promise<never>((_, reject) => 
+                setTimeout(() => reject(new Error('Metadata save timeout')), 30000)
+              )
+            ]);
 
-          if (!saveResponse.ok) {
-            throw new Error(`Failed to save metadata for ${file.name}`);
+            if (!saveResponse.ok) {
+              throw new Error(`Failed to save metadata for ${file.name}`);
+            }
+
+            const result = await saveResponse.json();
+            
+            console.log(`✅ [${index}] Upload complete:`, {
+              filename: file.name,
+              url: `${result.data?.url?.substring(0, 50)}...`,
+              hasId: Boolean(result.data?._id)
+            });
+            
+            // Update to success
+            requestAnimationFrame(() => {
+              setUploadProgress(prev => prev.map((item, i) => 
+                i === index ? { ...item, status: 'success', progress: 100 } : item
+              ));
+            });
+            
+            if (result.success && result.data) {
+              return { file, data: result.data, index };
+            }
+            return null;
+          } catch (uploadError) {
+            clearTimeout(timeoutId);
+            throw uploadError;
           }
-
-          const result = await saveResponse.json();
-          
-          console.log(`✅ [${index}] Upload complete:`, {
-            filename: file.name,
-            url: result.data?.url?.substring(0, 50) + '...',
-            hasId: !!result.data?._id
-          });
-          
-          // Update to success
-          requestAnimationFrame(() => {
-            setUploadProgress(prev => prev.map((item, i) => 
-              i === index ? { ...item, status: 'success', progress: 100 } : item
-            ));
-          });
-          
-          if (result.success && result.data) {
-            return { file, data: result.data, index };
-          }
-          return null;
         } catch (fileError) {
           console.error(`Error uploading ${file.name}:`, fileError);
+          const errorMessage = fileError instanceof Error 
+            ? (fileError.name === 'AbortError' || fileError.message.includes('timeout') 
+                ? `Upload timeout (file too large or slow connection): ${file.name}`
+                : `Upload failed: ${fileError.message}`)
+            : `Upload failed: ${file.name}`;
+          
           // Mark as error
           requestAnimationFrame(() => {
             setUploadProgress(prev => prev.map((item, i) => 
-              i === index ? { ...item, status: 'error' } : item
+              i === index ? { ...item, status: 'error', progress: 0 } : item
             ));
           });
+          
+          console.error(`❌ [${index}] ${errorMessage}`);
           return null;
         }
       });
@@ -183,7 +225,7 @@ export default function AlbumDetailPage() {
       const results = await Promise.all(uploadPromises);
       
       // Filter successful uploads
-      const successfulUploads = results.filter(r => r !== null);
+  const successfulUploads = results.filter((entry): entry is { file: File; data: MediaDocument; index: number } => entry !== null);
       
       // Update state once with all new media (smooth, no flickering)
       if (successfulUploads.length > 0 && albumDetail) {
@@ -191,9 +233,7 @@ export default function AlbumDetailPage() {
           if (!prev) return prev;
           
           // Create a map by index for accurate replacement
-          const uploadsByIndex = new Map(
-            successfulUploads.map(upload => [upload!.index, upload!.data])
-          );
+          const uploadsByIndex = new Map(successfulUploads.map((upload) => [upload.index, upload.data]));
           
           // Filter out all placeholder items (blob: URLs)
           const realMedia = prev.media.filter(item => !item.url.startsWith('blob:'));
@@ -202,11 +242,11 @@ export default function AlbumDetailPage() {
           const newUploads = Array.from(uploadsByIndex.values());
           
           // Cleanup blob URLs
-          prev.media.forEach(item => {
+          for (const item of prev.media) {
             if (item.url.startsWith('blob:')) {
               URL.revokeObjectURL(item.url);
             }
-          });
+          }
           
           return {
             ...prev,
@@ -216,21 +256,31 @@ export default function AlbumDetailPage() {
       }
       
       // Progress bar will auto-hide after 2s (handled in UploadProgress component)
-      // Don't show toast for successful uploads - progress bar is enough
+      // Show summary toast if there were any failures
+      const failedCount = files.length - successfulUploads.length;
+      if (failedCount > 0) {
+        setToast({ 
+          message: `${successfulUploads.length} uploaded successfully, ${failedCount} failed (check console for details)`, 
+          type: 'info' 
+        });
+      }
     } catch (error) {
       console.error("Error uploading files:", error);
       // Revert optimistic update on error
       await fetchMediaOnly();
-      setToast({ message: error instanceof Error ? error.message : "Failed to upload files", type: 'error' });
+      const errorMessage = error instanceof Error && error.message.includes('timeout')
+        ? "Upload timeout - files may be too large or connection too slow. Try uploading fewer/smaller files."
+        : error instanceof Error ? error.message : "Failed to upload files";
+      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setUploading(false);
       // Cleanup any remaining temporary URLs
       if (albumDetail) {
-        albumDetail.media.forEach(item => {
+        for (const item of albumDetail.media) {
           if (item.url.startsWith('blob:')) {
             URL.revokeObjectURL(item.url);
           }
-        });
+        }
       }
     }
   };
@@ -257,7 +307,7 @@ export default function AlbumDetailPage() {
       console.error("Error deleting media:", error);
       setToast({ message: "Failed to delete media", type: 'error' });
     }
-  }, []);
+  }, [fetchMediaOnly]);
 
   const handleSetCover = useCallback(async (mediaUrl: string) => {
     try {
@@ -288,8 +338,121 @@ export default function AlbumDetailPage() {
     }
   }, [albumId, albumDetail]);
 
+  const handleToggleMediaPublish = useCallback(async (mediaId: string, nextState: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/media/${mediaId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isPublished: nextState }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setAlbumDetail((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            media: prev.media.map((m) =>
+              m._id?.toString() === mediaId
+                ? { ...m, isPublished: nextState }
+                : m
+            ),
+          };
+        });
+        setToast({ 
+          message: `Media ${nextState ? 'published' : 'unpublished'} successfully`, 
+          type: 'success' 
+        });
+      } else {
+        setToast({ message: result.error || "Failed to update media", type: 'error' });
+      }
+    } catch (error) {
+      console.error("Error toggling media publish:", error);
+      setToast({ message: "Failed to update media", type: 'error' });
+    }
+  }, []);
+
   const handleCloseUploadProgress = useCallback(() => {
     setUploadProgress([]);
+  }, []);
+
+  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'isPublished', value: string | boolean) => {
+    if (!albumId) return;
+
+    try {
+      setIsSaving(true);
+      const response = await fetch(`/api/admin/albums/${albumId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setAlbumDetail((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            album: { ...prev.album, [field]: value },
+          };
+        });
+        setToast({ message: `${field === 'isPublished' ? 'Publish status' : field} updated successfully`, type: 'success' });
+      } else {
+        setToast({ message: result.error || `Failed to update ${field}`, type: 'error' });
+      }
+    } catch (error) {
+      console.error(`Error updating ${field}:`, error);
+      setToast({ message: `Failed to update ${field}`, type: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [albumId]);
+
+  const handleTitleChange = useCallback((newTitle: string) => {
+    setEditingTitle(newTitle);
+    
+    // Clear existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Set new timer for auto-save after 2 seconds
+    saveTimerRef.current = setTimeout(() => {
+      void updateAlbumField('title', newTitle);
+    }, 2000);
+  }, [updateAlbumField]);
+
+  const handleDescriptionChange = useCallback((newDescription: string) => {
+    setEditingDescription(newDescription);
+    
+    // Clear existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Set new timer for auto-save after 2 seconds
+    saveTimerRef.current = setTimeout(() => {
+      void updateAlbumField('description', newDescription);
+    }, 2000);
+  }, [updateAlbumField]);
+
+  const handleTogglePublish = useCallback(() => {
+    if (!albumDetail) return;
+    void updateAlbumField('isPublished', !albumDetail.album.isPublished);
+  }, [albumDetail, updateAlbumField]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
   }, []);
 
   if (loading) {
@@ -319,15 +482,26 @@ export default function AlbumDetailPage() {
     <Column maxWidth="l" paddingTop="24" gap="24">
       {/* Header */}
       <Row horizontal="between" vertical="center">
-        <Column gap="4">
-          <Heading variant="heading-strong-xl">{album.title}</Heading>
-          {album.description && (
-            <Text variant="body-default-s" onBackground="neutral-weak">
-              {album.description}
-            </Text>
-          )}
+        <Column gap="4" fillWidth>
+          <Row gap="12" vertical="center">
+            <Heading variant="heading-strong-xl">Album Settings</Heading>
+            {isSaving && (
+              <Text variant="body-default-xs" onBackground="neutral-weak">
+                Saving...
+              </Text>
+            )}
+          </Row>
         </Column>
         <Row gap="12">
+          <Button
+            variant={albumDetail.album.isPublished ? "secondary" : "primary"}
+            onClick={handleTogglePublish}
+          >
+            <Row gap="8" vertical="center">
+              {albumDetail.album.isPublished ? <FiUnlock /> : <FiLock />}
+              <Text>{albumDetail.album.isPublished ? "Published" : "Private"}</Text>
+            </Row>
+          </Button>
           <CopyGalleryLinkButton
             albumId={albumId}
             token={album.link.token}
@@ -337,6 +511,36 @@ export default function AlbumDetailPage() {
           </Link>
         </Row>
       </Row>
+
+      {/* Album Edit Section */}
+      <Column gap="16" padding="20" radius="m" background="neutral-alpha-weak">
+        <Text variant="label-default-m">Album Information</Text>
+        <Column gap="16">
+          <Column gap="8">
+            <Text variant="label-default-s" onBackground="neutral-weak">
+              Title
+            </Text>
+            <Input
+              id="album-title"
+              value={editingTitle}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              placeholder="Enter album title"
+            />
+          </Column>
+          <Column gap="8">
+            <Text variant="label-default-s" onBackground="neutral-weak">
+              Description
+            </Text>
+            <Textarea
+              id="album-description"
+              value={editingDescription}
+              onChange={(e) => handleDescriptionChange(e.target.value)}
+              placeholder="Enter album description"
+              rows={3}
+            />
+          </Column>
+        </Column>
+      </Column>
 
       {/* Album Info */}
       <Column gap="8" padding="16" radius="m" background="neutral-alpha-weak">
@@ -381,6 +585,7 @@ export default function AlbumDetailPage() {
         media={media}
         onDelete={handleDeleteMedia}
         onSetCover={handleSetCover}
+        onTogglePublish={handleToggleMediaPublish}
         coverImage={album.coverImage}
       />
 

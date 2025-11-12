@@ -49,7 +49,7 @@ export interface BasePageConfig {
 /**
  * Album page configuration (renamed from Blog).
  */
-export interface Album extends BasePageConfig {}
+export type Album = BasePageConfig;
 
 /**
  * Gallery page configuration.
