@@ -17,10 +17,12 @@ export default function GalleryView({ media }: GalleryViewProps) {
   const images = media.filter((m) => m.type === "image");
 
   const breakpointColumnsObj = {
-    // default: 2 columns on desktop
-    default: 2,
-    // keep 2 columns for medium widths
-    768: 2,
+    // default: 3 columns on desktop
+    default: 3,
+    // 2 columns for medium widths (tablets)
+    1024: 2,
+    // 1 column for mobile
+    640: 1,
   };
 
   const handleImageClick = (index: number) => {
