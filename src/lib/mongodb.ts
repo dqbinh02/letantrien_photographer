@@ -29,7 +29,12 @@ export async function connectToDatabase() {
     return { client: cached.client, db: cached.db };
   }
 
-  const client = new MongoClient(MONGODB_URI);
+  const client = new MongoClient(MONGODB_URI, {
+    serverSelectionTimeoutMS: 10000, // 10 seconds
+    connectTimeoutMS: 10000, // 10 seconds
+    socketTimeoutMS: 45000, // 45 seconds
+  });
+  
   await client.connect();
   const db = client.db(MONGODB_DB);
 

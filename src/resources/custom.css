@@ -4,18 +4,18 @@
 	 See: https://github.com/paulcollett/react-masonry-css */
 .my-masonry-grid {
 	display: flex;
-	margin-left: -16px; /* gutter offset (negative of column padding) */
+	margin-left: -8px; /* gutter offset (negative of column padding) */
 	width: auto;
 }
 
 .my-masonry-grid_column {
-	padding-left: 16px; /* gutter size */
+	padding-left: 8px; /* gutter size */
 	background-clip: padding-box;
 }
 
 /* items */
 .my-masonry-grid_column > * {
-	margin-bottom: 16px; /* vertical gutter */
+	margin-bottom: 8px; /* vertical gutter */
 }
 
 /* ensure images are responsive inside the column */
