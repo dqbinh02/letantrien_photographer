@@ -158,7 +158,7 @@ export async function PATCH(
       updatedCount: result.modifiedCount,
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error reordering media:', error);
     
     // Return user-friendly error message

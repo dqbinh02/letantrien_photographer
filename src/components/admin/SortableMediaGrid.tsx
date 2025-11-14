@@ -28,7 +28,6 @@ interface SortableMediaGridProps {
   onTogglePublish?: (mediaId: string, nextState: boolean) => void;
   onReorder?: (reorderedMedia: MediaDocument[]) => void;
   coverImage?: string;
-  isReordering?: boolean;
 }
 
 export const SortableMediaGrid = React.memo(function SortableMediaGrid({
@@ -38,7 +37,6 @@ export const SortableMediaGrid = React.memo(function SortableMediaGrid({
   onTogglePublish,
   onReorder,
   coverImage,
-  isReordering = false,
 }: SortableMediaGridProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [localMedia, setLocalMedia] = useState<MediaDocument[]>(media);
@@ -122,51 +120,36 @@ export const SortableMediaGrid = React.memo(function SortableMediaGrid({
 
   return (
     <>
-      <Column gap="16">
-        <Text variant="heading-strong-m">
-          Media Files ({localMedia.length})
-          {isReordering && (
-            <Text 
-              variant="body-default-xs" 
-              onBackground="neutral-weak"
-              style={{ marginLeft: '12px' }}
-            >
-              Saving order...
-            </Text>
-          )}
-        </Text>
-
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={localMedia.map(item => item._id?.toString() || item.url)}
+          strategy={rectSortingStrategy}
         >
-          <SortableContext
-            items={localMedia.map(item => item._id?.toString() || item.url)}
-            strategy={rectSortingStrategy}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+              gap: "8px",
+            }}
           >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                gap: "8px",
-              }}
-            >
-              {localMedia.map((item) => (
-                <SortableMediaItem
-                  key={item._id?.toString() || item.url}
-                  media={item}
-                  onDelete={onDelete}
-                  onSetCover={onSetCover}
-                  onTogglePublish={onTogglePublish}
-                  isCover={coverImage === item.url}
-                  onClick={() => handleImageClick(item)}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
-      </Column>
+            {localMedia.map((item) => (
+              <SortableMediaItem
+                key={item._id?.toString() || item.url}
+                media={item}
+                onDelete={onDelete}
+                onSetCover={onSetCover}
+                onTogglePublish={onTogglePublish}
+                isCover={coverImage === item.url}
+                onClick={() => handleImageClick(item)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Image Modal */}
       {selectedImageIndex !== null && images[selectedImageIndex] && (

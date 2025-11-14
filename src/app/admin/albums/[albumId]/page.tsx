@@ -4,8 +4,8 @@ import { Column, Heading, Button, Text, Row, Input, Textarea } from "@once-ui-sy
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { FiLock, FiUnlock } from "react-icons/fi";
-import { UploadZone, CopyGalleryLinkButton, Toast, UploadProgress, type UploadItem } from "@/components";
+import { FiLock, FiUnlock, FiArrowDown } from "react-icons/fi";
+import { UploadZone, CopyGalleryLinkButton, UploadProgress, type UploadItem } from "@/components";
 import { SortableMediaGrid } from "@/components/admin/SortableMediaGrid";
 import type { AlbumDocument, MediaDocument } from "@/types";
 import { upload } from "@vercel/blob/client";
@@ -23,14 +23,16 @@ export default function AlbumDetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<UploadItem[]>([]);
   const [editingTitle, setEditingTitle] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
+  const [sortBy, setSortBy] = useState<'order' | 'date' | 'name' | 'size'>('order');
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const reorderTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sortMenuRef = useRef<HTMLDivElement | null>(null);
 
   const fetchAlbumDetail = useCallback(async () => {
     try {
@@ -102,7 +104,6 @@ export default function AlbumDetailPage() {
     // Optimistic update: add placeholder items to prevent layout shift
     const albumMongoId = albumDetail.album._id;
     if (!albumMongoId) {
-      setToast({ message: "Album is missing an identifier", type: 'error' });
       setUploading(false);
       return;
     }
@@ -262,12 +263,6 @@ export default function AlbumDetailPage() {
       // Progress bar will auto-hide after 2s (handled in UploadProgress component)
       // Show summary toast if there were any failures
       const failedCount = files.length - successfulUploads.length;
-      if (failedCount > 0) {
-        setToast({ 
-          message: `${successfulUploads.length} uploaded successfully, ${failedCount} failed (check console for details)`, 
-          type: 'info' 
-        });
-      }
     } catch (error) {
       console.error("Error uploading files:", error);
       // Revert optimistic update on error
@@ -275,7 +270,6 @@ export default function AlbumDetailPage() {
       const errorMessage = error instanceof Error && error.message.includes('timeout')
         ? "Upload timeout - files may be too large or connection too slow. Try uploading fewer/smaller files."
         : error instanceof Error ? error.message : "Failed to upload files";
-      setToast({ message: errorMessage, type: 'error' });
     } finally {
       setUploading(false);
       // Cleanup any remaining temporary URLs
@@ -304,12 +298,9 @@ export default function AlbumDetailPage() {
       if (result.success) {
         // Refresh media list only
         await fetchMediaOnly();
-      } else {
-        setToast({ message: result.error || "Failed to delete media", type: 'error' });
       }
     } catch (error) {
       console.error("Error deleting media:", error);
-      setToast({ message: "Failed to delete media", type: 'error' });
     }
   }, [fetchMediaOnly]);
 
@@ -333,12 +324,9 @@ export default function AlbumDetailPage() {
             album: { ...albumDetail.album, coverImage: mediaUrl },
           });
         }
-      } else {
-        setToast({ message: result.error || "Failed to set cover image", type: 'error' });
       }
     } catch (error) {
       console.error("Error setting cover:", error);
-      setToast({ message: "Failed to set cover image", type: 'error' });
     }
   }, [albumId, albumDetail]);
 
@@ -367,16 +355,9 @@ export default function AlbumDetailPage() {
             ),
           };
         });
-        setToast({ 
-          message: `Media ${nextState ? 'published' : 'unpublished'} successfully`, 
-          type: 'success' 
-        });
-      } else {
-        setToast({ message: result.error || "Failed to update media", type: 'error' });
       }
     } catch (error) {
       console.error("Error toggling media publish:", error);
-      setToast({ message: "Failed to update media", type: 'error' });
     }
   }, []);
 
@@ -405,13 +386,9 @@ export default function AlbumDetailPage() {
             album: { ...prev.album, [field]: value },
           };
         });
-        setToast({ message: `${field === 'isPublished' ? 'Publish status' : field} updated successfully`, type: 'success' });
-      } else {
-        setToast({ message: result.error || `Failed to update ${field}`, type: 'error' });
       }
     } catch (error) {
       console.error(`Error updating ${field}:`, error);
-      setToast({ message: `Failed to update ${field}`, type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -450,6 +427,70 @@ export default function AlbumDetailPage() {
     void updateAlbumField('isPublished', !albumDetail.album.isPublished);
   }, [albumDetail, updateAlbumField]);
 
+  const handleSort = useCallback(async (sortType: 'date' | 'name' | 'size') => {
+    if (!albumDetail || !albumId) return;
+
+    setSortBy(sortType);
+    setSortMenuOpen(false);
+
+    // Sort media based on selected criteria
+    const sortedMedia = [...albumDetail.media];
+    
+    switch (sortType) {
+      case 'date':
+        sortedMedia.sort((a, b) => 
+          new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime()
+        );
+        break;
+      case 'name':
+        sortedMedia.sort((a, b) => 
+          a.filename.localeCompare(b.filename)
+        );
+        break;
+      case 'size':
+        // Sort by URL length as proxy for size (real size would need additional metadata)
+        sortedMedia.sort((a, b) => {
+          const sizeA = a.url?.length || 0;
+          const sizeB = b.url?.length || 0;
+          return sizeA - sizeB;
+        });
+        break;
+    }
+
+    // Update local state immediately
+    setAlbumDetail({
+      ...albumDetail,
+      media: sortedMedia,
+    });
+
+    // Update order in database
+    try {
+      setIsReordering(true);
+      
+      const mediaOrders = sortedMedia.map((media, index) => ({
+        mediaId: media._id!.toString(),
+        order: index,
+      }));
+
+      const response = await fetch(`/api/admin/albums/${albumId}/reorder`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mediaOrders }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        await fetchMediaOnly();
+      }
+    } catch (error) {
+      console.error('Error sorting media:', error);
+      await fetchMediaOnly();
+    } finally {
+      setIsReordering(false);
+    }
+  }, [albumDetail, albumId, fetchMediaOnly]);
+
   const handleReorder = useCallback(async (reorderedMedia: MediaDocument[]) => {
     if (!albumId) return;
 
@@ -486,23 +527,35 @@ export default function AlbumDetailPage() {
 
         const result = await response.json();
 
-        if (result.success) {
-          setToast({ message: `Order updated (${result.updatedCount} items)`, type: 'success' });
-        } else {
+        if (!result.success) {
           // Revert on error
           await fetchMediaOnly();
-          setToast({ message: result.error || 'Failed to update order', type: 'error' });
         }
       } catch (error) {
         console.error('Error reordering media:', error);
         // Revert on error
         await fetchMediaOnly();
-        setToast({ message: 'Failed to update order', type: 'error' });
       } finally {
         setIsReordering(false);
       }
     }, 500);
   }, [albumId, fetchMediaOnly]);
+
+  // Close sort menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(event.target as Node)) {
+        setSortMenuOpen(false);
+      }
+    };
+
+    if (sortMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [sortMenuOpen]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -641,6 +694,164 @@ export default function AlbumDetailPage() {
         isUploading={uploading}
       />
 
+      {/* Sort Controls */}
+      <Row horizontal="between" vertical="center">
+        <Row gap="12" vertical="center">
+          <Text variant="heading-strong-m">Media Files ({media.length})</Text>
+          {isReordering && (
+            <Text variant="body-default-xs" onBackground="neutral-weak">
+              Saving order...
+            </Text>
+          )}
+        </Row>
+        <div ref={sortMenuRef} style={{ position: 'relative' }}>
+          <Button
+            variant="secondary"
+            size="m"
+            onClick={() => setSortMenuOpen(!sortMenuOpen)}
+            disabled={media.length < 2}
+          >
+            <Row gap="8" vertical="center">
+              <Text>
+                {sortBy === 'order' && 'Manual Order'}
+                {sortBy === 'date' && 'Sort by Date'}
+                {sortBy === 'name' && 'Sort by Name'}
+                {sortBy === 'size' && 'Sort by Size'}
+              </Text>
+              <FiArrowDown size={14} />
+            </Row>
+          </Button>
+
+          {/* Dropdown Menu */}
+          {sortMenuOpen && (
+            <Column
+              gap="0"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                right: 0,
+                minWidth: '180px',
+                backgroundColor: 'var(--neutral-background-strong)',
+                border: '1px solid var(--neutral-border-medium)',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                zIndex: 1000,
+                overflow: 'hidden',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setSortBy('order')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: sortBy === 'order' ? 'var(--accent-background-weak)' : 'transparent',
+                  color: sortBy === 'order' ? 'var(--accent-on-background-strong)' : 'var(--neutral-on-background-strong)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: sortBy === 'order' ? 600 : 400,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (sortBy !== 'order') {
+                    e.currentTarget.style.background = 'var(--neutral-alpha-weak)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (sortBy !== 'order') {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                Manual Order (Drag & Drop)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSort('date')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: sortBy === 'date' ? 'var(--accent-background-weak)' : 'transparent',
+                  color: sortBy === 'date' ? 'var(--accent-on-background-strong)' : 'var(--neutral-on-background-strong)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: sortBy === 'date' ? 600 : 400,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (sortBy !== 'date') {
+                    e.currentTarget.style.background = 'var(--neutral-alpha-weak)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (sortBy !== 'date') {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                Sort by Date ↑
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSort('name')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: sortBy === 'name' ? 'var(--accent-background-weak)' : 'transparent',
+                  color: sortBy === 'name' ? 'var(--accent-on-background-strong)' : 'var(--neutral-on-background-strong)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: sortBy === 'name' ? 600 : 400,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (sortBy !== 'name') {
+                    e.currentTarget.style.background = 'var(--neutral-alpha-weak)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (sortBy !== 'name') {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                Sort by Name (A-Z)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSort('size')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  background: sortBy === 'size' ? 'var(--accent-background-weak)' : 'transparent',
+                  color: sortBy === 'size' ? 'var(--accent-on-background-strong)' : 'var(--neutral-on-background-strong)',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: sortBy === 'size' ? 600 : 400,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (sortBy !== 'size') {
+                    e.currentTarget.style.background = 'var(--neutral-alpha-weak)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (sortBy !== 'size') {
+                    e.currentTarget.style.background = 'transparent';
+                  }
+                }}
+              >
+                Sort by Size ↑
+              </button>
+            </Column>
+          )}
+        </div>
+      </Row>
+
       {/* Sortable Media Grid */}
       <SortableMediaGrid
         media={media}
@@ -649,7 +860,6 @@ export default function AlbumDetailPage() {
         onTogglePublish={handleToggleMediaPublish}
         onReorder={handleReorder}
         coverImage={album.coverImage}
-        isReordering={isReordering}
       />
 
       {/* Upload Progress */}
@@ -657,16 +867,6 @@ export default function AlbumDetailPage() {
         <UploadProgress
           items={uploadProgress}
           onClose={handleCloseUploadProgress}
-        />
-      )}
-
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          duration={3000}
-          onDismiss={() => setToast(null)}
         />
       )}
     </Column>
