@@ -42,6 +42,16 @@ export async function POST(
       );
     }
 
+    // Get the current max order for this album
+    const maxOrderDoc = await db
+      .collection<MediaDocument>("media")
+      .find({ albumId: new ObjectId(albumId) })
+      .sort({ order: -1 })
+      .limit(1)
+      .toArray();
+    
+    const nextOrder = (maxOrderDoc[0]?.order ?? -1) + 1;
+
     // Save metadata to MongoDB
     const media: Omit<MediaDocument, "_id"> = {
       albumId: new ObjectId(albumId),
@@ -50,6 +60,7 @@ export async function POST(
       filename: pathname,
       isPublished: true,
       uploadedAt: new Date(),
+      order: nextOrder,
     };
 
     const result = await db.collection<MediaDocument>("media").insertOne(media as MediaDocument);

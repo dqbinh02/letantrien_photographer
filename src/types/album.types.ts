@@ -39,6 +39,7 @@ export interface MediaDocument {
   filename: string;
   isPublished: boolean;
   uploadedAt: Date;
+  order: number;    // Display order (0, 1, 2, ...) - used for manual sorting
 }
 
 export interface CreateAlbumRequest {

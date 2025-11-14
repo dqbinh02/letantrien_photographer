@@ -57,7 +57,7 @@ export async function GET(
         albumId: new ObjectId(albumId),
         isPublished: true,
       })
-      .sort({ uploadedAt: 1 })
+      .sort({ order: 1 })
       .toArray();
 
     return NextResponse.json({

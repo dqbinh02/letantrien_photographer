@@ -104,13 +104,14 @@ export default function AlbumDetailPage() {
       return;
     }
 
-    const placeholderMedia: MediaDocument[] = files.map((file) => ({
+    const placeholderMedia: MediaDocument[] = files.map((file, index) => ({
       albumId: albumMongoId,
       url: URL.createObjectURL(file), // temporary local URL
       type: file.type.startsWith("image/") ? "image" : "video",
       filename: file.name,
       isPublished: true,
       uploadedAt: new Date(),
+      order: albumDetail.media.length + index, // Temporary order
     }));
 
     // Update UI optimistically
