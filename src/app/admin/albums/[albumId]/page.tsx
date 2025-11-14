@@ -261,15 +261,10 @@ export default function AlbumDetailPage() {
       }
       
       // Progress bar will auto-hide after 2s (handled in UploadProgress component)
-      // Show summary toast if there were any failures
-      const failedCount = files.length - successfulUploads.length;
     } catch (error) {
       console.error("Error uploading files:", error);
       // Revert optimistic update on error
       await fetchMediaOnly();
-      const errorMessage = error instanceof Error && error.message.includes('timeout')
-        ? "Upload timeout - files may be too large or connection too slow. Try uploading fewer/smaller files."
-        : error instanceof Error ? error.message : "Failed to upload files";
     } finally {
       setUploading(false);
       // Cleanup any remaining temporary URLs
@@ -739,33 +734,6 @@ export default function AlbumDetailPage() {
                 overflow: 'hidden',
               }}
             >
-              <button
-                type="button"
-                onClick={() => setSortBy('order')}
-                style={{
-                  padding: '12px 16px',
-                  border: 'none',
-                  background: sortBy === 'order' ? 'var(--accent-background-weak)' : 'transparent',
-                  color: sortBy === 'order' ? 'var(--accent-on-background-strong)' : 'var(--neutral-on-background-strong)',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: sortBy === 'order' ? 600 : 400,
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (sortBy !== 'order') {
-                    e.currentTarget.style.background = 'var(--neutral-alpha-weak)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (sortBy !== 'order') {
-                    e.currentTarget.style.background = 'transparent';
-                  }
-                }}
-              >
-                Manual Order (Drag & Drop)
-              </button>
               <button
                 type="button"
                 onClick={() => handleSort('date')}

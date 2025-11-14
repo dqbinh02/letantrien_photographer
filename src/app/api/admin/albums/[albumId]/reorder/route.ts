@@ -51,7 +51,7 @@ export async function PATCH(
     let body: ReorderRequest;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       return NextResponse.json(
         { success: false, error: 'Invalid JSON in request body' },
         { status: 400 }
@@ -158,8 +158,8 @@ export async function PATCH(
       updatedCount: result.modifiedCount,
     });
 
-  } catch (error: unknown) {
-    console.error('❌ Error reordering media:', error);
+  } catch (_error: unknown) {
+    console.error('❌ Error reordering media:', _error);
     
     // Return user-friendly error message
     return NextResponse.json(
