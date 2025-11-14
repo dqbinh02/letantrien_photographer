@@ -76,23 +76,72 @@ export default function AlbumDetailPage() {
   const { album, media } = albumDetail;
 
   return (
-    <Column maxWidth="xl" paddingTop="24" gap="24">
-      <Column gap="8" horizontal="center">
-        <Heading variant="heading-strong-xl">{album.title}</Heading>
-        {album.description && (
-          <Text
-            variant="body-default-m"
-            onBackground="neutral-weak"
-            style={{ textAlign: "center", maxWidth: "600px" }}
-          >
-            {album.description}
-          </Text>
-        )}
-        <Text variant="label-default-s" onBackground="neutral-weak">
-          {media.length} {media.length === 1 ? "photo" : "photos"}
+    <Column maxWidth="xl" paddingTop="40" paddingBottom="40" gap="48">
+      {/* Album Header */}
+      <Column gap="24" horizontal="center" style={{ width: '100%' }}>
+        {/* Date & Photo Count */}
+        <Text
+          variant="label-default-m"
+          onBackground="neutral-weak"
+          style={{ 
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            fontSize: '0.875rem',
+          }}
+        >
+          {new Date(album.createdAt).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+          {' • '}
+          {media.length} {media.length === 1 ? 'Photo' : 'Photos'}
         </Text>
+
+        {/* Title */}
+        <Heading 
+          variant="heading-strong-l" 
+          style={{ 
+            textAlign: 'center',
+            fontSize: 'clamp(2rem, 5vw, 3rem)',
+            letterSpacing: '0.05em',
+            lineHeight: '1.3',
+            fontWeight: 500,
+            textTransform: 'uppercase',
+          }}
+        >
+          {album.title}
+        </Heading>
+
+        {/* Description */}
+        {album.description && (
+          <>
+            <div
+              style={{
+                width: '60px',
+                height: '1px',
+                backgroundColor: 'var(--neutral-border-medium)',
+                opacity: 0.5,
+              }}
+            />
+            <Text
+              variant="body-default-l"
+              onBackground="neutral-medium"
+              style={{ 
+                textAlign: 'center', 
+                maxWidth: '680px',
+                lineHeight: '1.8',
+                fontSize: '1.125rem',
+                fontWeight: 400,
+              }}
+            >
+              {album.description}
+            </Text>
+          </>
+        )}
       </Column>
 
+      {/* Gallery */}
       <GalleryView media={media} />
     </Column>
   );
