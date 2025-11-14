@@ -5,7 +5,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { FiLock, FiUnlock } from "react-icons/fi";
-import { UploadZone, MediaGrid, CopyGalleryLinkButton, Toast, UploadProgress, type UploadItem } from "@/components";
+import { UploadZone, CopyGalleryLinkButton, Toast, UploadProgress, type UploadItem } from "@/components";
+import { SortableMediaGrid } from "@/components/admin/SortableMediaGrid";
 import type { AlbumDocument, MediaDocument } from "@/types";
 import { upload } from "@vercel/blob/client";
 
@@ -27,7 +28,9 @@ export default function AlbumDetailPage() {
   const [editingTitle, setEditingTitle] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const reorderTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchAlbumDetail = useCallback(async () => {
     try {
@@ -447,11 +450,68 @@ export default function AlbumDetailPage() {
     void updateAlbumField('isPublished', !albumDetail.album.isPublished);
   }, [albumDetail, updateAlbumField]);
 
-  // Cleanup timer on unmount
+  const handleReorder = useCallback(async (reorderedMedia: MediaDocument[]) => {
+    if (!albumId) return;
+
+    // Update local state immediately (optimistic update)
+    setAlbumDetail((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        media: reorderedMedia,
+      };
+    });
+
+    // Clear existing timer
+    if (reorderTimerRef.current) {
+      clearTimeout(reorderTimerRef.current);
+    }
+
+    // Debounce API call (500ms after last drag)
+    reorderTimerRef.current = setTimeout(async () => {
+      try {
+        setIsReordering(true);
+
+        // Prepare request body
+        const mediaOrders = reorderedMedia.map((media, index) => ({
+          mediaId: media._id!.toString(),
+          order: index,
+        }));
+
+        const response = await fetch(`/api/admin/albums/${albumId}/reorder`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mediaOrders }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setToast({ message: `Order updated (${result.updatedCount} items)`, type: 'success' });
+        } else {
+          // Revert on error
+          await fetchMediaOnly();
+          setToast({ message: result.error || 'Failed to update order', type: 'error' });
+        }
+      } catch (error) {
+        console.error('Error reordering media:', error);
+        // Revert on error
+        await fetchMediaOnly();
+        setToast({ message: 'Failed to update order', type: 'error' });
+      } finally {
+        setIsReordering(false);
+      }
+    }, 500);
+  }, [albumId, fetchMediaOnly]);
+
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
+      }
+      if (reorderTimerRef.current) {
+        clearTimeout(reorderTimerRef.current);
       }
     };
   }, []);
@@ -581,13 +641,15 @@ export default function AlbumDetailPage() {
         isUploading={uploading}
       />
 
-      {/* Media Grid */}
-      <MediaGrid
+      {/* Sortable Media Grid */}
+      <SortableMediaGrid
         media={media}
         onDelete={handleDeleteMedia}
         onSetCover={handleSetCover}
         onTogglePublish={handleToggleMediaPublish}
+        onReorder={handleReorder}
         coverImage={album.coverImage}
+        isReordering={isReordering}
       />
 
       {/* Upload Progress */}
