@@ -56,10 +56,9 @@ export default function GalleryView({ media }: GalleryViewProps) {
   return (
     <div
       style={{ 
-        maxWidth: '1200px', 
+        maxWidth: '100%', 
         marginLeft: 'auto', 
         marginRight: 'auto',
-        padding: '16px'
       }}
     >
       <Masonry
