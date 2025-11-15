@@ -21,8 +21,8 @@ export default function GalleryView({ media }: GalleryViewProps) {
     default: 3,
     // 2 columns for medium widths (tablets)
     1024: 2,
-    // 1 column for mobile
-    640: 1,
+    // 2 columns for mobile
+    640: 2,
   };
 
   const handleImageClick = (index: number) => {
