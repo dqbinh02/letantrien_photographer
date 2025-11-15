@@ -34,6 +34,7 @@ export const Header = () => {
         data-border="rounded"
         s={{
           position: "fixed",
+          top: "0",
         }}
       >
         <Row paddingLeft="12" fillWidth vertical="center" textVariant="body-default-s">

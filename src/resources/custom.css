@@ -1,5 +1,12 @@
 /* Custom CSS */
 
+/* Mobile: Add padding-top to main content wrapper when header is fixed */
+@media screen and (max-width: 768px) {
+	.main-content-wrapper {
+		padding-top: 50px !important;
+	}
+}
+
 /* Minimal styles for react-masonry-css when using the default class names
 	 See: https://github.com/paulcollett/react-masonry-css */
 .my-masonry-grid {
