@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { FiX, FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import NextImage from "next/image";
+import Image from "next/image";
 
 interface ImageModalProps {
   imageUrl: string;
@@ -12,6 +12,8 @@ interface ImageModalProps {
   onPrev?: () => void;
   hasNext?: boolean;
   hasPrev?: boolean;
+  nextImageUrl?: string;
+  prevImageUrl?: string;
 }
 
 export function ImageModal({ 
@@ -21,8 +23,20 @@ export function ImageModal({
   onNext, 
   onPrev,
   hasNext = false,
-  hasPrev = false 
+  hasPrev = false,
+  nextImageUrl,
+  prevImageUrl
 }: ImageModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl);
+
+  // Update image when prop changes
+  useEffect(() => {
+    if (imageUrl !== currentImageUrl) {
+      setIsLoading(true);
+      setCurrentImageUrl(imageUrl);
+    }
+  }, [imageUrl, currentImageUrl]);
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -163,13 +177,22 @@ export function ImageModal({
         </button>
       )}
 
-      {/* Image */}
-      <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
-        <NextImage
-          src={imageUrl}
+      {/* Image - unoptimized to use original blob URL (already cached from grid) */}
+      <div style={{ 
+        position: 'relative', 
+        width: '90vw', 
+        height: '90vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <Image
+          src={currentImageUrl}
           alt={alt || "Gallery image"}
           width={1920}
           height={1080}
+          unoptimized
+          onLoad={() => setIsLoading(false)}
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
           style={{
             maxWidth: '90vw',
@@ -179,7 +202,8 @@ export function ImageModal({
             objectFit: 'contain',
             borderRadius: '8px',
             boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
-            animation: 'zoomIn 0.2s ease-out',
+            opacity: isLoading ? 0.3 : 1,
+            transition: 'opacity 0.2s ease-out',
           }}
         />
       </div>

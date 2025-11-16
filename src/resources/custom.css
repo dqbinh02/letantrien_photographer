@@ -119,3 +119,37 @@
 		margin: 0 16px;
 	}
 }
+
+/* Falling leaves animation */
+@keyframes fall {
+	0% {
+		top: -50px;
+		opacity: 0;
+	}
+	10% {
+		opacity: 0.7;
+	}
+	90% {
+		opacity: 0.7;
+	}
+	100% {
+		top: 100vh;
+		opacity: 0;
+	}
+}
+
+@keyframes swing {
+	0%, 100% {
+		transform: translateX(0) rotate(0deg);
+	}
+	25% {
+		transform: translateX(30px) rotate(10deg);
+	}
+	75% {
+		transform: translateX(-30px) rotate(-10deg);
+	}
+}
+
+.falling-leaf {
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}

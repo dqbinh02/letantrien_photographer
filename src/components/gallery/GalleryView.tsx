@@ -111,7 +111,8 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
               alt={image.filename}
               width={800}
               height={600}
-              loading="lazy"
+              loading={index < 6 ? "eager" : "lazy"}
+              priority={index < 3}
               onClick={() => handleImageClick(index)}
               className="rounded-lg w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               style={{
@@ -161,6 +162,8 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
           onPrev={handlePrev}
           hasNext={selectedImageIndex < images.length - 1}
           hasPrev={selectedImageIndex > 0}
+          nextImageUrl={selectedImageIndex < images.length - 1 ? images[selectedImageIndex + 1]?.url : undefined}
+          prevImageUrl={selectedImageIndex > 0 ? images[selectedImageIndex - 1]?.url : undefined}
         />
       )}
     </div>

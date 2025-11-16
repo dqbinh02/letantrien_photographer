@@ -19,6 +19,7 @@ export interface AlbumDocument {
   coverImage: string; // blob URL
   isPublished: boolean;
   theme: AlbumTheme; // Gallery display theme: 'light', 'dark', or 'auto' (system preference)
+  fallingLeaves?: boolean; // Enable/disable falling leaves effect in gallery
   createdAt: Date;
   updatedAt: Date;
   link: {
@@ -53,6 +54,7 @@ export interface CreateAlbumRequest {
   location?: string;
   isPublished?: boolean;
   theme?: AlbumTheme;
+  fallingLeaves?: boolean;
   expiresAt?: Date;
 }
 

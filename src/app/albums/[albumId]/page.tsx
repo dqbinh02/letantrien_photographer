@@ -4,6 +4,7 @@ import { Column, Heading, Text, Button } from "@once-ui-system/core";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import GalleryView from "@/components/gallery/GalleryView";
+import FallingLeaves from "@/components/FallingLeaves";
 import { AlbumThemeManager } from "@/components/AlbumThemeManager";
 import type { AlbumDocument, MediaDocument } from "@/types";
 
@@ -121,6 +122,9 @@ export default function AlbumDetailPage() {
 
   return (
     <Column maxWidth="xl" paddingTop="40" paddingBottom="40" gap="48">
+      {/* Falling leaves effect - conditionally render based on album setting */}
+      {album.fallingLeaves && <FallingLeaves />}
+      
       {/* Apply album-specific theme */}
       <AlbumThemeManager theme={album.theme || 'light'} />
       

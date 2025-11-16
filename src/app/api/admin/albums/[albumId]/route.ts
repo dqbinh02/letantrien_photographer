@@ -89,6 +89,7 @@ export async function PATCH(
     if (body.location !== undefined) updateData.location = body.location;
     if (body.coverImage !== undefined) updateData.coverImage = body.coverImage;
     if (body.theme !== undefined) updateData.theme = body.theme;
+    if (body.fallingLeaves !== undefined) updateData.fallingLeaves = body.fallingLeaves;
 
     const result = await db
       .collection<AlbumDocument>("albums")
@@ -186,6 +187,16 @@ export async function PUT(
         );
       }
       updateData.theme = body.theme;
+    }
+
+    if (body.fallingLeaves !== undefined) {
+      if (typeof body.fallingLeaves !== "boolean") {
+        return NextResponse.json(
+          { success: false, error: "fallingLeaves must be a boolean" },
+          { status: 400 }
+        );
+      }
+      updateData.fallingLeaves = body.fallingLeaves;
     }
 
     const result = await db

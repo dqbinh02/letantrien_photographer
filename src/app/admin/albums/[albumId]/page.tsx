@@ -389,7 +389,7 @@ export default function AlbumDetailPage() {
     setUploadProgress([]);
   }, []);
 
-  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'location' | 'isPublished' | 'theme', value: string | boolean | AlbumTheme) => {
+  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'location' | 'isPublished' | 'theme' | 'fallingLeaves', value: string | boolean | AlbumTheme) => {
     if (!albumId) return;
 
     try {
@@ -727,6 +727,25 @@ export default function AlbumDetailPage() {
             <Text variant="body-default-xs" onBackground="neutral-weak">
               Choose how the gallery will be displayed to viewers
             </Text>
+          </Column>
+          <Column gap="8">
+            <Row horizontal="between" vertical="center">
+              <Column gap="4">
+                <Text variant="label-default-s" onBackground="neutral-weak">
+                  Falling Leaves Effect
+                </Text>
+                <Text variant="body-default-xs" onBackground="neutral-weak">
+                  Add animated falling leaves to the gallery
+                </Text>
+              </Column>
+              <Button
+                variant={album.fallingLeaves ? "primary" : "secondary"}
+                onClick={() => updateAlbumField('fallingLeaves', !album.fallingLeaves)}
+                size="s"
+              >
+                {album.fallingLeaves ? "Enabled" : "Disabled"}
+              </Button>
+            </Row>
           </Column>
         </Column>
       </Column>
