@@ -5,7 +5,13 @@ Thêm chức năng download cho từng media item và download tất cả media 
 
 ## Requirements
 
+### **QUAN TRỌNG: Chỉ hiển thị nút download khi có token trong URL**
+- Download chỉ khả dụng cho gallery được truy cập qua link có token
+- Ví dụ: `http://localhost:3000/albums/69172e8d22885229f4b6b238?token=6e4de82047a80b136148ebcb1dfd4cbc`
+- Nếu không có token trong URL → KHÔNG hiển thị các nút download
+
 ### 1. Download Individual Media Item
+- **Điều kiện hiển thị**: Chỉ hiển thị khi `token` có trong URL query params
 - **UI**: Khi hover vào mỗi media item trên gallery, xuất hiện nút Download ở góc dưới bên phải
 - **Position**: Nút nằm trong khung ảnh/video, không làm thay đổi layout
 - **Style**: 
@@ -16,6 +22,7 @@ Thêm chức năng download cho từng media item và download tất cả media 
 - **Action**: Click vào sẽ gọi API và tải file về
 
 ### 2. Download All Media (ZIP)
+- **Điều kiện hiển thị**: Chỉ hiển thị khi `token` có trong URL query params
 - **UI**: Nút "Download All" ở phần header album
 - **Action**: Click → gọi POST `/api/albums/{albumId}/export-zip?token={token}`
 - **Backend**: Tạo ZIP (streaming), trả về file để tải xuống
@@ -30,19 +37,47 @@ Thêm chức năng download cho từng media item và download tất cả media 
 #### 1.1. Frontend - Component Updates
 
 **File**: `src/components/gallery/GalleryView.tsx`
-- Thêm download button overlay vào mỗi media item
+- Thêm prop `hasToken` để kiểm tra xem có token hay không
+- Chỉ render download button khi `hasToken === true`
 - Implement hover state
 - CSS for fade-in animation
 
 **Changes**:
 ```tsx
-// Thêm download button overlay
-<div className="media-item-container">
-  <img src={...} />
-  <button className="download-overlay" onClick={() => handleDownload(media)}>
-    <DownloadIcon />
-  </button>
-</div>
+interface GalleryViewProps {
+  media: MediaDocument[];
+  hasToken?: boolean; // NEW: Chỉ hiển thị download khi có token
+}
+
+export default function GalleryView({ media, hasToken = false }: GalleryViewProps) {
+  // ...existing code...
+
+  return (
+    <Masonry>
+      {images.map((image, index) => (
+        <div className="media-item-container" key={...}>
+          <Image
+            src={image.url}
+            alt={image.filename}
+            // ...existing props...
+          />
+          {/* Chỉ hiển thị download button khi có token */}
+          {hasToken && (
+            <button 
+              className="download-overlay" 
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent opening modal
+                handleDownload(image);
+              }}
+            >
+              <DownloadIcon />
+            </button>
+          )}
+        </div>
+      ))}
+    </Masonry>
+  );
+}
 ```
 
 **CSS** (trong component hoặc custom.css):
@@ -75,34 +110,48 @@ Thêm chức năng download cho từng media item và download tất cả media 
 }
 ```
 
-#### 1.2. Frontend - Download Handler
+#### 1.2. Frontend - Download Handler (in GalleryView.tsx)
 
 **Function**: `handleDownload(media: MediaDocument)`
 ```tsx
-const handleDownload = async (media: MediaDocument) => {
-  try {
-    const token = searchParams?.get("token");
-    const url = `/api/media/${media._id}/download${token ? `?token=${token}` : ''}`;
-    
-    // Fetch file
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Download failed');
-    
-    // Create blob and download
-    const blob = await response.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = media.filename || 'download';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
-  } catch (error) {
-    console.error('Download error:', error);
-    // Show error toast
-  }
-};
+interface GalleryViewProps {
+  media: MediaDocument[];
+  hasToken?: boolean;
+  token?: string | null; // NEW: Pass token from parent
+}
+
+export default function GalleryView({ media, hasToken = false, token = null }: GalleryViewProps) {
+  const handleDownload = async (media: MediaDocument) => {
+    if (!token) {
+      console.error('No token available for download');
+      return;
+    }
+
+    try {
+      const url = `/api/media/${media._id}/download?token=${token}`;
+      
+      // Fetch file
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Download failed');
+      
+      // Create blob and download
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = media.filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Show error toast
+    }
+  };
+  
+  // ...rest of component
+}
 ```
 
 #### 1.3. Backend - Download Single Media API
@@ -111,12 +160,15 @@ const handleDownload = async (media: MediaDocument) => {
 
 **Endpoint**: `GET /api/media/{mediaId}/download?token={token}`
 
+**QUAN TRỌNG**: API này **BẮT BUỘC** phải có token. Không cho phép download nếu không có token.
+
 **Implementation**:
 ```typescript
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import type { AlbumDocument, MediaDocument } from "@/types";
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
@@ -128,26 +180,41 @@ const s3Client = new S3Client({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { mediaId: string } }
+  { params }: { params: Promise<{ mediaId: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
+    const { mediaId } = await params;
     
-    // Validate access (same logic as album detail)
-    const client = await clientPromise;
-    const db = client.db("photographer");
+    // QUAN TRỌNG: Bắt buộc phải có token
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token is required for download" }, 
+        { status: 401 }
+      );
+    }
     
-    const media = await db.collection("media").findOne({
-      _id: new ObjectId(params.mediaId),
+    if (!ObjectId.isValid(mediaId)) {
+      return NextResponse.json(
+        { error: "Invalid media ID" },
+        { status: 400 }
+      );
+    }
+    
+    const { db } = await connectToDatabase();
+    
+    // Get media
+    const media = await db.collection<MediaDocument>("media").findOne({
+      _id: new ObjectId(mediaId),
     });
     
     if (!media) {
       return NextResponse.json({ error: "Media not found" }, { status: 404 });
     }
     
-    // Verify album access
-    const album = await db.collection("albums").findOne({
+    // Verify album access with token (same logic as GET /api/albums/[albumId])
+    const album = await db.collection<AlbumDocument>("albums").findOne({
       _id: new ObjectId(media.albumId),
     });
     
@@ -155,23 +222,30 @@ export async function GET(
       return NextResponse.json({ error: "Album not found" }, { status: 404 });
     }
     
-    // Check if album is published or valid token
-    if (!album.isPublished) {
-      if (!token || album.accessToken !== token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
+    // Validate token (same as album detail route)
+    const linkToken = album.link?.token;
+    const expiresAt = album.link?.expiresAt ? new Date(album.link.expiresAt) : null;
+    const isTokenValid =
+      Boolean(token && linkToken && token === linkToken) &&
+      (!expiresAt || expiresAt.getTime() > Date.now());
+    
+    if (!isTokenValid) {
+      return NextResponse.json(
+        { error: "Invalid or expired token" }, 
+        { status: 403 }
+      );
     }
     
     // Get file from S3
     const command = new GetObjectCommand({
       Bucket: process.env.AWS_S3_BUCKET_NAME!,
-      Key: media.s3Key,
+      Key: media.url, // media.url contains the S3 key/path
     });
     
     const s3Response = await s3Client.send(command);
     
     if (!s3Response.Body) {
-      return NextResponse.json({ error: "File not found" }, { status: 404 });
+      return NextResponse.json({ error: "File not found in S3" }, { status: 404 });
     }
     
     // Stream response
@@ -203,37 +277,73 @@ export async function GET(
 
 **File**: `src/app/albums/[albumId]/page.tsx`
 
-**Changes**: Thêm button vào album header
+**Changes**: 
+1. Thêm button "Download All" vào album header (chỉ khi có token)
+2. Pass `hasToken` và `token` props xuống GalleryView
+
 ```tsx
 import { useState } from 'react';
 import { Button } from '@once-ui-system/core';
 
-const [isDownloading, setIsDownloading] = useState(false);
+export default function AlbumDetailPage() {
+  const params = useParams<{ albumId: string }>();
+  const searchParams = useSearchParams();
+  const albumId = params?.albumId ?? "";
+  const token = searchParams?.get("token"); // Đã có sẵn trong code hiện tại
+  
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // ...existing code...
 
-// In the album header section:
-<div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-  <Heading variant="heading-strong-l">
-    {album.title}
-  </Heading>
-  <Button
-    onClick={handleDownloadAll}
-    disabled={isDownloading}
-    variant="secondary"
-    size="m"
-  >
-    {isDownloading ? 'Creating ZIP...' : 'Download All'}
-  </Button>
-</div>
+  // Kiểm tra xem có token không
+  const hasToken = Boolean(token);
+
+  return (
+    <Column maxWidth="xl" paddingTop="40" paddingBottom="40" gap="48">
+      {/* Album Header */}
+      <Column gap="24" horizontal="center" style={{ width: '100%' }}>
+        {/* ...existing date & title... */}
+        
+        {/* Download All Button - CHỈ hiển thị khi có token */}
+        {hasToken && (
+          <Button
+            onClick={handleDownloadAll}
+            disabled={isDownloading}
+            variant="secondary"
+            size="m"
+          >
+            {isDownloading ? 'Creating ZIP...' : 'Download All'}
+          </Button>
+        )}
+        
+        {/* ...existing description... */}
+      </Column>
+
+      {/* Gallery - Pass hasToken và token */}
+      <GalleryView 
+        media={media} 
+        hasToken={hasToken}
+        token={token}
+      />
+    </Column>
+  );
+}
 ```
 
 #### 2.2. Frontend - Download All Handler
 
 ```tsx
 const handleDownloadAll = async () => {
+  // Double check token exists (should always be true if button is visible)
+  if (!token) {
+    console.error('No token available for download');
+    return;
+  }
+
   try {
     setIsDownloading(true);
     
-    const url = `/api/albums/${albumId}/export-zip${token ? `?token=${token}` : ''}`;
+    const url = `/api/albums/${albumId}/export-zip?token=${token}`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -274,6 +384,8 @@ const handleDownloadAll = async () => {
 
 **Endpoint**: `POST /api/albums/{albumId}/export-zip?token={token}`
 
+**QUAN TRỌNG**: API này **BẮT BUỘC** phải có token. Không cho phép download nếu không có token.
+
 **Dependencies**: 
 ```bash
 pnpm add archiver @types/archiver
@@ -283,10 +395,10 @@ pnpm add archiver @types/archiver
 ```typescript
 import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import { connectToDatabase } from "@/lib/mongodb";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import archiver from "archiver";
-import { Readable } from "stream";
+import type { AlbumDocument, MediaDocument } from "@/types";
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION!,
@@ -298,34 +410,57 @@ const s3Client = new S3Client({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { albumId: string } }
+  { params }: { params: Promise<{ albumId: string }> }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
+    const { albumId } = await params;
     
-    const client = await clientPromise;
-    const db = client.db("photographer");
+    // QUAN TRỌNG: Bắt buộc phải có token
+    if (!token) {
+      return NextResponse.json(
+        { error: "Token is required for download" }, 
+        { status: 401 }
+      );
+    }
     
-    // Validate album access
-    const album = await db.collection("albums").findOne({
-      _id: new ObjectId(params.albumId),
+    if (!ObjectId.isValid(albumId)) {
+      return NextResponse.json(
+        { error: "Invalid album ID" },
+        { status: 400 }
+      );
+    }
+    
+    const { db } = await connectToDatabase();
+    
+    // Validate album access with token (same logic as GET /api/albums/[albumId])
+    const album = await db.collection<AlbumDocument>("albums").findOne({
+      _id: new ObjectId(albumId),
     });
     
     if (!album) {
       return NextResponse.json({ error: "Album not found" }, { status: 404 });
     }
     
-    if (!album.isPublished) {
-      if (!token || album.accessToken !== token) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      }
+    // Validate token (same as album detail route)
+    const linkToken = album.link?.token;
+    const expiresAt = album.link?.expiresAt ? new Date(album.link.expiresAt) : null;
+    const isTokenValid =
+      Boolean(token && linkToken && token === linkToken) &&
+      (!expiresAt || expiresAt.getTime() > Date.now());
+    
+    if (!isTokenValid) {
+      return NextResponse.json(
+        { error: "Invalid or expired token" }, 
+        { status: 403 }
+      );
     }
     
     // Get all published media
-    const media = await db.collection("media")
+    const media = await db.collection<MediaDocument>("media")
       .find({
-        albumId: params.albumId,
+        albumId: new ObjectId(albumId),
         isPublished: true,
       })
       .sort({ order: 1 })
@@ -362,7 +497,7 @@ export async function POST(
       try {
         const command = new GetObjectCommand({
           Bucket: process.env.AWS_S3_BUCKET_NAME!,
-          Key: item.s3Key,
+          Key: item.url, // media.url contains the S3 key/path
         });
         
         const s3Response = await s3Client.send(command);
@@ -405,17 +540,19 @@ export async function POST(
 ## Testing Checklist
 
 ### Individual Download
-- [ ] Download button xuất hiện khi hover vào media item
+- [ ] **Download button CHỈ xuất hiện khi URL có token**
+- [ ] Download button KHÔNG xuất hiện khi không có token trong URL
+- [ ] Download button xuất hiện khi hover vào media item (nếu có token)
 - [ ] Download button có animation fade-in mượt mà
 - [ ] Click download button tải đúng file về
 - [ ] Download hoạt động với cả ảnh và video
-- [ ] Download hoạt động với album published (không cần token)
-- [ ] Download hoạt động với album unpublished (có token)
-- [ ] Download không hoạt động khi không có quyền truy cập
+- [ ] API trả về 401 nếu không có token
+- [ ] API trả về 403 nếu token không hợp lệ hoặc đã hết hạn
 - [ ] Hiển thị lỗi khi download thất bại
 
 ### Download All
-- [ ] Nút "Download All" hiển thị ở album header
+- [ ] **Nút "Download All" CHỈ hiển thị khi URL có token**
+- [ ] Nút "Download All" KHÔNG hiển thị khi không có token trong URL
 - [ ] Click nút tạo ZIP và tải về
 - [ ] Nút chuyển sang trạng thái loading khi đang tạo ZIP
 - [ ] Nút disabled khi đang tạo ZIP
@@ -423,8 +560,8 @@ export async function POST(
 - [ ] File trong ZIP giữ nguyên tên gốc
 - [ ] File trong ZIP sắp xếp theo order
 - [ ] ZIP download hoạt động với album lớn (nhiều file)
-- [ ] Download All hoạt động với album published
-- [ ] Download All hoạt động với album unpublished (có token)
+- [ ] API trả về 401 nếu không có token
+- [ ] API trả về 403 nếu token không hợp lệ hoặc đã hết hạn
 - [ ] Hiển thị lỗi khi tạo ZIP thất bại
 
 ### UI/UX
@@ -443,8 +580,8 @@ export async function POST(
 2. `src/app/api/albums/[albumId]/export-zip/route.ts`
 
 ### Modified Files
-1. `src/components/gallery/GalleryView.tsx` - Add download button overlay
-2. `src/app/albums/[albumId]/page.tsx` - Add "Download All" button
+1. `src/components/gallery/GalleryView.tsx` - Add download button overlay (conditional on hasToken)
+2. `src/app/albums/[albumId]/page.tsx` - Add "Download All" button (conditional on token), pass props to GalleryView
 3. `src/resources/custom.css` - Add download button styles
 4. `package.json` - Add archiver dependency
 
@@ -461,11 +598,16 @@ pnpm add @aws-sdk/client-s3  # Should already be installed
 
 ## Security Considerations
 
-1. **Access Control**: Verify album access before allowing download (both for individual and ZIP)
-2. **Token Validation**: Check token for unpublished albums
-3. **Rate Limiting**: Consider adding rate limiting for download endpoints
-4. **File Size**: Monitor ZIP file size to prevent memory issues
-5. **S3 Permissions**: Ensure S3 bucket has proper read permissions
+1. **Token Required**: Download chỉ hoạt động khi có token trong URL (không cho phép download public)
+2. **Access Control**: Verify album access với token validation (same logic as GET /api/albums/[albumId])
+3. **Token Validation**: 
+   - Check token === album.link.token
+   - Check expiration time (album.link.expiresAt)
+   - Return 401 nếu không có token
+   - Return 403 nếu token invalid hoặc expired
+4. **Rate Limiting**: Consider adding rate limiting for download endpoints
+5. **File Size**: Monitor ZIP file size to prevent memory issues
+6. **S3 Permissions**: Ensure S3 bucket has proper read permissions
 
 ---
 

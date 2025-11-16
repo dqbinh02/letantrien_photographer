@@ -37,3 +37,38 @@
 	height: auto;
 	border-radius: 0.5rem; /* matches tailwind 'rounded-lg' */
 }
+
+/* Download button overlay styles */
+.media-item-container {
+	position: relative;
+}
+
+.download-overlay {
+	position: absolute;
+	bottom: 12px;
+	right: 12px;
+	background: rgba(0, 0, 0, 0.7);
+	color: white;
+	border: none;
+	padding: 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.2s ease, background 0.2s ease;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.media-item-container:hover .download-overlay {
+	opacity: 1;
+}
+
+.download-overlay:hover {
+	background: rgba(0, 0, 0, 0.9);
+}
+
+.download-overlay:active {
+	transform: scale(0.95);
+}

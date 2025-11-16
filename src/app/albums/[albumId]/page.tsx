@@ -1,6 +1,6 @@
 "use client";
 
-import { Column, Heading, Text } from "@once-ui-system/core";
+import { Column, Heading, Text, Button } from "@once-ui-system/core";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import GalleryView from "@/components/gallery/GalleryView";
@@ -21,6 +21,7 @@ export default function AlbumDetailPage() {
   const [albumDetail, setAlbumDetail] = useState<AlbumDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -56,6 +57,47 @@ export default function AlbumDetailPage() {
     void fetchAlbum();
   }, [albumId, token]);
 
+  const handleDownloadAll = async () => {
+    if (!token) {
+      console.error('No token available for download');
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+      
+      const url = `/api/albums/${albumId}/export-zip?token=${token}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create ZIP');
+      }
+      
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch?.[1] || `${albumDetail?.album.title || 'album'}.zip`;
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+    } catch (error) {
+      console.error('Download all error:', error);
+      alert('Failed to download all media. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (loading) {
     return (
       <Column maxWidth="l" paddingTop="24" gap="24" horizontal="center">
@@ -75,6 +117,7 @@ export default function AlbumDetailPage() {
   }
 
   const { album, media } = albumDetail;
+  const hasToken = Boolean(token);
 
   return (
     <Column maxWidth="xl" paddingTop="40" paddingBottom="40" gap="48">
@@ -82,7 +125,7 @@ export default function AlbumDetailPage() {
       <AlbumThemeManager theme={album.theme || 'light'} />
       
       {/* Album Header */}
-      <Column gap="24" horizontal="center" style={{ width: '100%' }}>
+      <Column gap="8" horizontal="center" style={{ width: '100%' }}>
         {/* Date & Photo Count */}
         <Text
           variant="label-default-m"
@@ -145,8 +188,26 @@ export default function AlbumDetailPage() {
         )}
       </Column>
 
+      {/* Download All Button - Right before gallery, minimal gap */}
+      {hasToken && (
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', marginTop: '-50px', marginBottom: '-45px' }}>
+          <Button
+            onClick={handleDownloadAll}
+            disabled={isDownloading}
+            variant="secondary"
+            size="m"
+          >
+            {isDownloading ? 'Creating ZIP...' : 'Download All'}
+          </Button>
+        </div>
+      )}
+
       {/* Gallery */}
-      <GalleryView media={media} />
+      <GalleryView 
+        media={media}
+        hasToken={hasToken}
+        token={token}
+      />
     </Column>
   );
 }

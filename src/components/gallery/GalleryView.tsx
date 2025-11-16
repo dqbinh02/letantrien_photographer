@@ -8,9 +8,11 @@ import type { MediaDocument } from "@/types";
 
 interface GalleryViewProps {
   media: MediaDocument[];
+  hasToken?: boolean;
+  token?: string | null;
 }
 
-export default function GalleryView({ media }: GalleryViewProps) {
+export default function GalleryView({ media, hasToken = false, token = null }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   // Filter only images
@@ -45,6 +47,37 @@ export default function GalleryView({ media }: GalleryViewProps) {
     }
   };
 
+  const handleDownload = async (image: MediaDocument, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening modal
+    
+    if (!token) {
+      console.error('No token available for download');
+      return;
+    }
+
+    try {
+      const url = `/api/media/${image._id}/download?token=${token}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+      
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = image.filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert('Failed to download file. Please try again.');
+    }
+  };
+
   if (images.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "32px" }}>
@@ -67,22 +100,49 @@ export default function GalleryView({ media }: GalleryViewProps) {
         columnClassName="my-masonry-grid_column"
       >
         {images.map((image, index) => (
-          <Image
+          <div 
             key={image._id?.toString() || `image-${index}`}
-            src={image.url}
-            alt={image.filename}
-            width={800}
-            height={600}
-            loading="lazy"
-            onClick={() => handleImageClick(index)}
-            className="rounded-lg w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-            style={{
-              display: "block",
-              width: "100%",
-              height: "auto",
-              borderRadius: "8px",
-            }}
-          />
+            className="media-item-container"
+            style={{ position: 'relative' }}
+          >
+            <Image
+              src={image.url}
+              alt={image.filename}
+              width={800}
+              height={600}
+              loading="lazy"
+              onClick={() => handleImageClick(index)}
+              className="rounded-lg w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+              style={{
+                display: "block",
+                width: "100%",
+                height: "auto",
+                borderRadius: "8px",
+              }}
+            />
+            {hasToken && (
+              <button 
+                className="download-overlay"
+                onClick={(e) => handleDownload(image, e)}
+                title="Download"
+              >
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+            )}
+          </div>
         ))}
       </Masonry>
 
