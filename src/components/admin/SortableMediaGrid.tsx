@@ -26,6 +26,7 @@ interface SortableMediaGridProps {
   onDelete?: (mediaId: string) => void;
   onSetCover?: (mediaUrl: string) => void;
   onTogglePublish?: (mediaId: string, nextState: boolean) => void;
+  onToggleFavorite?: (mediaId: string) => void;
   onReorder?: (reorderedMedia: MediaDocument[]) => void;
   coverImage?: string;
 }
@@ -35,6 +36,7 @@ export const SortableMediaGrid = React.memo(function SortableMediaGrid({
   onDelete,
   onSetCover,
   onTogglePublish,
+  onToggleFavorite,
   onReorder,
   coverImage,
 }: SortableMediaGridProps) {
@@ -143,6 +145,7 @@ export const SortableMediaGrid = React.memo(function SortableMediaGrid({
                 onDelete={onDelete}
                 onSetCover={onSetCover}
                 onTogglePublish={onTogglePublish}
+                onToggleFavorite={onToggleFavorite}
                 isCover={coverImage === item.url}
                 onClick={() => handleImageClick(item)}
               />

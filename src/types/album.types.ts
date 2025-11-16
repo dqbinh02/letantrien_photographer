@@ -42,6 +42,7 @@ export interface MediaDocument {
   type: "image" | "video";
   filename: string;
   isPublished: boolean;
+  isFavorite?: boolean; // Mark as favorite by admin
   uploadedAt: Date;
   order: number;    // Display order (0, 1, 2, ...) - used for manual sorting
 }

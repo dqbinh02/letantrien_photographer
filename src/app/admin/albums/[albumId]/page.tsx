@@ -358,6 +358,33 @@ export default function AlbumDetailPage() {
     }
   }, []);
 
+  const handleToggleFavorite = useCallback(async (mediaId: string) => {
+    try {
+      const response = await fetch(`/api/admin/media/${mediaId}/toggle-favorite`, {
+        method: "PATCH",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update local state
+        setAlbumDetail((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            media: prev.media.map((m) =>
+              m._id?.toString() === mediaId
+                ? { ...m, isFavorite: result.isFavorite }
+                : m
+            ),
+          };
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  }, []);
+
   const handleCloseUploadProgress = useCallback(() => {
     setUploadProgress([]);
   }, []);
@@ -879,6 +906,7 @@ export default function AlbumDetailPage() {
         onDelete={handleDeleteMedia}
         onSetCover={handleSetCover}
         onTogglePublish={handleToggleMediaPublish}
+        onToggleFavorite={handleToggleFavorite}
         onReorder={handleReorder}
         coverImage={album.coverImage}
       />

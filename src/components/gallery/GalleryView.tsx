@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Masonry from "react-masonry-css";
+import { FaHeart } from "react-icons/fa";
 import { ImageModal } from "../ImageModal";
 import type { MediaDocument } from "@/types";
 
@@ -120,6 +121,11 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
                 borderRadius: "8px",
               }}
             />
+            {hasToken && image.isFavorite && (
+              <div className="favorite-overlay">
+                <FaHeart size={16} />
+              </div>
+            )}
             {hasToken && (
               <button 
                 className="download-overlay"

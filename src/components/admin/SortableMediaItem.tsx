@@ -4,7 +4,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Column, Text, Button, Row } from "@once-ui-system/core";
 import Image from "next/image";
-import { FiPlay, FiTrash2, FiStar, FiLock, FiUnlock, FiMove } from "react-icons/fi";
+import { FiPlay, FiTrash2, FiStar, FiLock, FiUnlock, FiMove, FiHeart } from "react-icons/fi";
+import { FaHeart } from "react-icons/fa";
 import type { MediaDocument } from "@/types";
 import React from "react";
 
@@ -13,6 +14,7 @@ interface SortableMediaItemProps {
   onDelete?: (mediaId: string) => void;
   onSetCover?: (mediaUrl: string) => void;
   onTogglePublish?: (mediaId: string, nextState: boolean) => void;
+  onToggleFavorite?: (mediaId: string) => void;
   isCover?: boolean;
   onClick?: () => void;
 }
@@ -22,6 +24,7 @@ export const SortableMediaItem = React.memo(function SortableMediaItem({
   onDelete,
   onSetCover,
   onTogglePublish,
+  onToggleFavorite,
   isCover,
   onClick
 }: SortableMediaItemProps) {
@@ -60,8 +63,15 @@ export const SortableMediaItem = React.memo(function SortableMediaItem({
     }
   };
 
+  const handleToggleFavorite = () => {
+    if (onToggleFavorite && media._id) {
+      onToggleFavorite(media._id.toString());
+    }
+  };
+
   const isVideo = media.type === "video";
   const isPublished = media.isPublished ?? false;
+  const isFavorite = media.isFavorite ?? false;
 
   return (
     <div ref={setNodeRef} style={style}>
@@ -165,6 +175,39 @@ export const SortableMediaItem = React.memo(function SortableMediaItem({
             >
               <FiStar size={12} style={{ color: "var(--accent-on-background-strong)" }} />
             </div>
+          )}
+
+          {/* Favorite toggle button */}
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleFavorite();
+              }}
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: isCover ? "40px" : "8px",
+                backgroundColor: "var(--neutral-alpha-strong)",
+                borderRadius: "50%",
+                width: "24px",
+                height: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+              }}
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              {isFavorite ? (
+                <FaHeart size={12} style={{ color: "var(--danger-on-background-strong)" }} />
+              ) : (
+                <FiHeart size={12} style={{ color: "var(--neutral-on-background-weak)" }} />
+              )}
+            </button>
           )}
         </button>
 
