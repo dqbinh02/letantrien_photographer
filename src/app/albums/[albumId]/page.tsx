@@ -151,8 +151,8 @@ export default function AlbumDetailPage() {
             month: 'long', 
             day: 'numeric' 
           })}
-          <span className="separator">•</span>
-          {media.length} {media.length === 1 ? 'Photo' : 'Photos'}
+          {/* <span className="separator">•</span>
+          {media.length} {media.length === 1 ? 'Photo' : 'Photos'} */}
         </Text>
 
         {/* Title */}
