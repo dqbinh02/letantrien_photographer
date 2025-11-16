@@ -86,6 +86,7 @@ export async function PATCH(
     // Only allow updating specific fields
     if (body.title !== undefined) updateData.title = body.title;
     if (body.description !== undefined) updateData.description = body.description;
+    if (body.location !== undefined) updateData.location = body.location;
     if (body.coverImage !== undefined) updateData.coverImage = body.coverImage;
     if (body.theme !== undefined) updateData.theme = body.theme;
 
@@ -155,6 +156,16 @@ export async function PUT(
         );
       }
       updateData.description = body.description;
+    }
+
+    if (body.location !== undefined) {
+      if (typeof body.location !== "string") {
+        return NextResponse.json(
+          { success: false, error: "Location must be a string" },
+          { status: 400 }
+        );
+      }
+      updateData.location = body.location;
     }
 
     if (body.isPublished !== undefined) {

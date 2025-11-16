@@ -26,6 +26,7 @@ export default function AlbumDetailPage() {
   const [uploadProgress, setUploadProgress] = useState<UploadItem[]>([]);
   const [editingTitle, setEditingTitle] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
+  const [editingLocation, setEditingLocation] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isReordering, setIsReordering] = useState(false);
   const [sortBy, setSortBy] = useState<'order' | 'date' | 'name' | 'size'>('order');
@@ -44,6 +45,7 @@ export default function AlbumDetailPage() {
         setAlbumDetail(result.data);
         setEditingTitle(result.data.album.title);
         setEditingDescription(result.data.album.description || "");
+        setEditingLocation(result.data.album.location || "");
       } else {
         setError(result.error || "Failed to fetch album");
       }
@@ -360,7 +362,7 @@ export default function AlbumDetailPage() {
     setUploadProgress([]);
   }, []);
 
-  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'isPublished' | 'theme', value: string | boolean | AlbumTheme) => {
+  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'location' | 'isPublished' | 'theme', value: string | boolean | AlbumTheme) => {
     if (!albumId) return;
 
     try {
@@ -414,6 +416,20 @@ export default function AlbumDetailPage() {
     // Set new timer for auto-save after 2 seconds
     saveTimerRef.current = setTimeout(() => {
       void updateAlbumField('description', newDescription);
+    }, 2000);
+  }, [updateAlbumField]);
+
+  const handleLocationChange = useCallback((newLocation: string) => {
+    setEditingLocation(newLocation);
+    
+    // Clear existing timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    // Set new timer for auto-save after 2 seconds
+    saveTimerRef.current = setTimeout(() => {
+      void updateAlbumField('location', newLocation);
     }, 2000);
   }, [updateAlbumField]);
 
@@ -646,6 +662,17 @@ export default function AlbumDetailPage() {
               onChange={(e) => handleDescriptionChange(e.target.value)}
               placeholder="Enter album description"
               rows={3}
+            />
+          </Column>
+          <Column gap="8">
+            <Text variant="label-default-s" onBackground="neutral-weak">
+              Location
+            </Text>
+            <Input
+              id="album-location"
+              value={editingLocation}
+              onChange={(e) => handleLocationChange(e.target.value)}
+              placeholder="Enter location (e.g., Hanoi, Saigon)"
             />
           </Column>
           <Column gap="8">

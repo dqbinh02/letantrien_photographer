@@ -126,7 +126,7 @@ export default function AlbumDetailPage() {
       
       {/* Album Header */}
       <Column gap="8" horizontal="center" style={{ width: '100%' }}>
-        {/* Date & Photo Count */}
+        {/* Location, Date & Photo Count */}
         <Text
           variant="label-default-m"
           onBackground="neutral-weak"
@@ -136,12 +136,18 @@ export default function AlbumDetailPage() {
             fontSize: '0.875rem',
           }}
         >
+          {album.location && (
+            <>
+              {album.location}
+              <span className="separator">•</span>
+            </>
+          )}
           {new Date(album.createdAt).toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: 'long', 
             day: 'numeric' 
           })}
-          {' • '}
+          <span className="separator">•</span>
           {media.length} {media.length === 1 ? 'Photo' : 'Photos'}
         </Text>
 
@@ -150,7 +156,7 @@ export default function AlbumDetailPage() {
           variant="heading-strong-l" 
           style={{ 
             textAlign: 'center',
-            fontSize: 'clamp(2rem, 5vw, 3rem)',
+            fontSize: 'clamp(1.75rem, 6vw, 3rem)',
             letterSpacing: '0.05em',
             lineHeight: '1.3',
             fontWeight: 500,
@@ -188,26 +194,32 @@ export default function AlbumDetailPage() {
         )}
       </Column>
 
-      {/* Download All Button - Right before gallery, minimal gap */}
-      {hasToken && (
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', marginTop: '-50px', marginBottom: '-45px' }}>
-          <Button
-            onClick={handleDownloadAll}
-            disabled={isDownloading}
-            variant="secondary"
-            size="m"
-          >
-            {isDownloading ? 'Creating ZIP...' : 'Download All'}
-          </Button>
-        </div>
-      )}
-
-      {/* Gallery */}
-      <GalleryView 
-        media={media}
-        hasToken={hasToken}
-        token={token}
-      />
+      {/* Gallery - with Download All button positioned above if token exists */}
+      <div style={{ position: 'relative', width: '100%' }}>
+        {hasToken && (
+          <div style={{ 
+            position: 'absolute', 
+            top: '-45px', 
+            left: '0',
+            zIndex: 10,
+          }}>
+            <Button
+              onClick={handleDownloadAll}
+              disabled={isDownloading}
+              variant="secondary"
+              size="m"
+            >
+              {isDownloading ? 'Creating ZIP...' : 'Download All'}
+            </Button>
+          </div>
+        )}
+        
+        <GalleryView 
+          media={media}
+          hasToken={hasToken}
+          token={token}
+        />
+      </div>
     </Column>
   );
 }

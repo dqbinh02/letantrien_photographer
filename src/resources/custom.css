@@ -72,3 +72,16 @@
 .download-overlay:active {
 	transform: scale(0.95);
 }
+
+/* Album header separator spacing */
+.separator {
+	display: inline-block;
+	margin: 0 4px;
+}
+
+/* Desktop: larger spacing for album header separator */
+@media screen and (min-width: 769px) {
+	.separator {
+		margin: 0 16px;
+	}
+}

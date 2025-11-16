@@ -15,6 +15,7 @@ export interface AlbumDocument {
   _id?: ObjectId;
   title: string;
   description: string;
+  location?: string; // Album location (e.g., "Hanoi", "Saigon")
   coverImage: string; // blob URL
   isPublished: boolean;
   theme: AlbumTheme; // Gallery display theme: 'light', 'dark', or 'auto' (system preference)
@@ -48,6 +49,7 @@ export interface MediaDocument {
 export interface CreateAlbumRequest {
   title: string;
   description?: string;
+  location?: string;
   isPublished?: boolean;
   theme?: AlbumTheme;
   expiresAt?: Date;
