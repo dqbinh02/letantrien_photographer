@@ -6,10 +6,10 @@ export default function Home() {
     <Column maxWidth="l" gap="xl" paddingY="12" horizontal="center">
       <Column fillWidth horizontal="start" gap="l" maxWidth="s" paddingX="l">
         <Column fillWidth horizontal="start" gap="m">
-          <Heading variant="display-strong-l" style={{ fontFamily: 'monospace' }}>
+          <Heading variant="display-strong-l">
             Lê Tấn Triển
           </Heading>
-          <Text variant="heading-default-l" onBackground="neutral-weak" style={{ fontFamily: 'monospace' }}>
+          <Text variant="heading-default-l" onBackground="neutral-weak">
             Photographer
           </Text>
         </Column>
@@ -17,20 +17,20 @@ export default function Home() {
         <div style={{ width: '100%', height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '1rem 0' }} />
 
         <Column fillWidth horizontal="start" gap="m">
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em', fontFamily: 'monospace' }}>
+          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em' }}>
             Mình là Triển, làm nhiếp ảnh ở Sài Gòn.
           </Text>
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em', fontFamily: 'monospace' }}>
+          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em' }}>
             Thích ánh sáng tự nhiên & những khoảnh khắc không sắp đặt.
           </Text>
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em', fontFamily: 'monospace' }}>
+          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em' }}>
             Mình làm ảnh, video và hậu kỳ — nhẹ nhàng, hướng cảm xúc.
           </Text>
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em', fontFamily: 'monospace' }}>
+          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em' }}>
             Khi không cầm máy, mình hay mở Ngọt<br />
             và lật lại vài chiếc đĩa mình đang sưu tầm.
           </Text>
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em', fontFamily: 'monospace' }}>
+          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.8', fontWeight: '300', letterSpacing: '0.02em' }}>
             Âm nhạc giúp mình giữ nhịp và chậm lại một chút.
           </Text>
         </Column>

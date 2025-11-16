@@ -1,5 +1,10 @@
 /* Custom CSS */
 
+/* Force Montserrat font globally */
+* {
+	font-family: 'Montserrat', var(--font-body), var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif !important;
+}
+
 /* Mobile: Add padding-top to main content wrapper when header is fixed */
 @media screen and (max-width: 768px) {
 	.main-content-wrapper {

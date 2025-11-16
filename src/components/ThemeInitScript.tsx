@@ -20,21 +20,21 @@ export function ThemeInitScript() {
       "viz-style": dataStyle.variant,
     };
 
+    // Apply default config values
     for (const [key, value] of Object.entries(config)) {
       root.setAttribute(`data-${key}`, value);
     }
 
-    const resolveTheme = (themeValue: string | null) => {
-      if (!themeValue || themeValue === 'system') {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-      return themeValue;
-    };
-
+    // Ensure light theme is default
     const savedTheme = localStorage.getItem('data-theme');
-    const resolvedTheme = resolveTheme(savedTheme);
-    root.setAttribute('data-theme', resolvedTheme);
+    if (!savedTheme) {
+      localStorage.setItem('data-theme', 'light');
+      root.setAttribute('data-theme', 'light');
+    } else {
+      root.setAttribute('data-theme', savedTheme);
+    }
 
+    // Load saved style preferences from localStorage
     const styleKeys = Object.keys(config);
     for (const key of styleKeys) {
       const value = localStorage.getItem(`data-${key}`);
