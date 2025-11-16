@@ -7,7 +7,7 @@ import Link from "next/link";
 import { FiLock, FiUnlock, FiArrowDown } from "react-icons/fi";
 import { UploadZone, CopyGalleryLinkButton, UploadProgress, type UploadItem } from "@/components";
 import { SortableMediaGrid } from "@/components/admin/SortableMediaGrid";
-import type { AlbumDocument, MediaDocument } from "@/types";
+import type { AlbumDocument, MediaDocument, AlbumTheme } from "@/types";
 import { upload } from "@vercel/blob/client";
 
 interface AlbumDetail {
@@ -360,7 +360,7 @@ export default function AlbumDetailPage() {
     setUploadProgress([]);
   }, []);
 
-  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'isPublished', value: string | boolean) => {
+  const updateAlbumField = useCallback(async (field: 'title' | 'description' | 'isPublished' | 'theme', value: string | boolean | AlbumTheme) => {
     if (!albumId) return;
 
     try {
@@ -647,6 +647,32 @@ export default function AlbumDetailPage() {
               placeholder="Enter album description"
               rows={3}
             />
+          </Column>
+          <Column gap="8">
+            <Text variant="label-default-s" onBackground="neutral-weak">
+              Gallery Theme
+            </Text>
+            <select
+              value={album.theme || 'light'}
+              onChange={(e) => updateAlbumField('theme', e.target.value as AlbumTheme)}
+              style={{
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--neutral-border-medium)',
+                backgroundColor: 'var(--neutral-background-medium)',
+                color: 'var(--neutral-on-background-strong)',
+                fontSize: '14px',
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="light">Light Mode</option>
+              <option value="dark">Dark Mode</option>
+              <option value="auto">Auto (System Preference)</option>
+            </select>
+            <Text variant="body-default-xs" onBackground="neutral-weak">
+              Choose how the gallery will be displayed to viewers
+            </Text>
           </Column>
         </Column>
       </Column>

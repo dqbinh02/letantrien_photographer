@@ -87,6 +87,7 @@ export async function PATCH(
     if (body.title !== undefined) updateData.title = body.title;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.coverImage !== undefined) updateData.coverImage = body.coverImage;
+    if (body.theme !== undefined) updateData.theme = body.theme;
 
     const result = await db
       .collection<AlbumDocument>("albums")
@@ -164,6 +165,16 @@ export async function PUT(
         );
       }
       updateData.isPublished = body.isPublished;
+    }
+
+    if (body.theme !== undefined) {
+      if (!['light', 'dark', 'auto'].includes(body.theme)) {
+        return NextResponse.json(
+          { success: false, error: "theme must be 'light', 'dark', or 'auto'" },
+          { status: 400 }
+        );
+      }
+      updateData.theme = body.theme;
     }
 
     const result = await db

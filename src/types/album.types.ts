@@ -9,12 +9,15 @@ export interface AlbumImage {
   orientation: 'horizontal' | 'vertical';
 }
 
+export type AlbumTheme = 'light' | 'dark' | 'auto';
+
 export interface AlbumDocument {
   _id?: ObjectId;
   title: string;
   description: string;
   coverImage: string; // blob URL
   isPublished: boolean;
+  theme: AlbumTheme; // Gallery display theme: 'light', 'dark', or 'auto' (system preference)
   createdAt: Date;
   updatedAt: Date;
   link: {
@@ -46,6 +49,7 @@ export interface CreateAlbumRequest {
   title: string;
   description?: string;
   isPublished?: boolean;
+  theme?: AlbumTheme;
   expiresAt?: Date;
 }
 

@@ -4,6 +4,7 @@ import { Column, Heading, Text } from "@once-ui-system/core";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import GalleryView from "@/components/gallery/GalleryView";
+import { AlbumThemeManager } from "@/components/AlbumThemeManager";
 import type { AlbumDocument, MediaDocument } from "@/types";
 
 interface AlbumDetail {
@@ -77,6 +78,9 @@ export default function AlbumDetailPage() {
 
   return (
     <Column maxWidth="xl" paddingTop="40" paddingBottom="40" gap="48">
+      {/* Apply album-specific theme */}
+      <AlbumThemeManager theme={album.theme || 'light'} />
+      
       {/* Album Header */}
       <Column gap="24" horizontal="center" style={{ width: '100%' }}>
         {/* Date & Photo Count */}

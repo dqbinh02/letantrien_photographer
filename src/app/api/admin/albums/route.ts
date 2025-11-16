@@ -50,7 +50,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
   const body: CreateAlbumRequest = await request.json();
-  const { title, description, expiresAt, isPublished } = body;
+  const { title, description, expiresAt, isPublished, theme } = body;
 
     if (!title || title.trim().length === 0) {
       return NextResponse.json(
@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       description: description?.trim() || "",
       coverImage: "",
       isPublished: Boolean(isPublished),
+      theme: theme || 'light',
       createdAt: new Date(),
       updatedAt: new Date(),
       link: {
