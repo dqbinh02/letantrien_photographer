@@ -100,20 +100,24 @@ export const Header = () => {
         </Row>
         <Row fillWidth horizontal="end" vertical="center">
           <Row paddingRight="12" horizontal="end" vertical="center" textVariant="body-default-s" gap="20">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <ToggleButton prefixIcon="person" label="Sign In" />
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8"
-                  }
-                }}
-              />
-            </SignedIn>
+            {pathname.startsWith("/admin") && (
+              <>
+                <SignedOut>
+                  <SignInButton mode="modal">
+                    <ToggleButton prefixIcon="person" label="Sign In" />
+                  </SignInButton>
+                </SignedOut>
+                <SignedIn>
+                  <UserButton 
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-8 h-8"
+                      }
+                    }}
+                  />
+                </SignedIn>
+              </>
+            )}
           </Row>
         </Row>
       </Row>

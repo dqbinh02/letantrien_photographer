@@ -1,5 +1,5 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
-import { Column, Row, Button, Text } from '@once-ui-system/core';
+import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs';
+import { Column, Button, Text } from '@once-ui-system/core';
 
 export default function AdminLayout({
   children,
@@ -20,18 +20,7 @@ export default function AdminLayout({
         </Column>
       </SignedOut>
       <SignedIn>
-        <Column fillWidth gap="24">
-          <Row horizontal="end" paddingRight="l">
-            <UserButton 
-              appearance={{
-                elements: {
-                  avatarBox: "w-10 h-10"
-                }
-              }}
-            />
-          </Row>
-          {children}
-        </Column>
+        {children}
       </SignedIn>
     </>
   );
