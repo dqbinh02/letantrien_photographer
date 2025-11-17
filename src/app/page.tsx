@@ -17,10 +17,8 @@ export default function Home() {
         <div style={{ width: '100%', height: '1px', background: 'rgba(255, 255, 255, 0.1)', margin: '1rem 0' }} />
 
         <Column fillWidth horizontal="start" gap="m">
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.0', fontWeight: '300', letterSpacing: '0.02em' }}>
-            Mình là Triển, photographer tại TP.HCM, thích ánh sáng tự nhiên và những khoảnh khắc không sắp đặt. Mình theo đuổi nhiếp ảnh kể chuyện – nơi mỗi bức ảnh không chỉ là hình ảnh mà là cảm xúc và câu chuyện của chính khoảnh khắc đó.
-          </Text>
-          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '1.0', fontWeight: '300', letterSpacing: '0.02em' }}>
+          <Text variant="body-default-s" onBackground="neutral-medium" align="start" style={{ lineHeight: '2', fontWeight: '300', letterSpacing: '0.02em' }}>
+            Mình là Triển, photographer tại TP.HCM, thích ánh sáng tự nhiên và những khoảnh khắc không sắp đặt. Mình theo đuổi nhiếp ảnh kể chuyện – nơi mỗi bức ảnh không chỉ là hình ảnh mà là cảm xúc và câu chuyện của chính khoảnh khắc đó.<br />
             Mình tin rằng sự chân thật tạo nên sức sống cho một bộ ảnh, và nhiệm vụ của mình là lặng lẽ quan sát, bắt lấy những phút giây đẹp nhất khi chúng tự nhiên diễn ra. Nếu bạn muốn những bức ảnh mang dấu ấn riêng, nhẹ nhàng nhưng sâu sắc, rất vui nếu chúng ta có thể cùng nhau tạo nên điều đó.
           </Text>
         </Column>
