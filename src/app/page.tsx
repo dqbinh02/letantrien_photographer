@@ -7,7 +7,7 @@ export default function Home() {
       <Column fillWidth horizontal="start" gap="l" maxWidth="s" paddingX="l">
         <Column fillWidth horizontal="start" gap="m">
           <Heading variant="display-strong-l">
-            Lê Tấn Triển
+            Lê Triển
           </Heading>
           <Text variant="heading-default-l" onBackground="neutral-weak">
             Photographer

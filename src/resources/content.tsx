@@ -3,7 +3,7 @@ import type { Album, Gallery, Person, Social } from "@/types";
 const person: Person = {
   firstName: "Lê Tấn",
   lastName: "Triển",
-  name: "Lê Tấn Triển",
+  name: "Lê Triển",
   role: "Photographer",
   avatar: "/images/avatar.jpg",
   email: "letantrien@example.com",
