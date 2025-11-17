@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Fade, Line, Row, ToggleButton } from "@once-ui-system/core";
 import { routes, album, gallery } from "@/resources";
 import { ThemeToggle } from "./ThemeToggle";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import styles from "./Header.module.scss";
 
 export const Header = () => {
@@ -99,6 +100,20 @@ export const Header = () => {
         </Row>
         <Row fillWidth horizontal="end" vertical="center">
           <Row paddingRight="12" horizontal="end" vertical="center" textVariant="body-default-s" gap="20">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <ToggleButton prefixIcon="person" label="Sign In" />
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8"
+                  }
+                }}
+              />
+            </SignedIn>
           </Row>
         </Row>
       </Row>

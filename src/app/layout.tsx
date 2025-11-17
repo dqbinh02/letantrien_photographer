@@ -7,6 +7,7 @@ import { Background, Column, Flex, Meta, RevealFx } from "@once-ui-system/core";
 import type { opacity, SpacingToken } from "@once-ui-system/core";
 import { Footer, Header, Providers, ThemeInitScript } from "@/components";
 import { baseURL, effects, fonts } from "@/resources";
+import { ClerkProvider } from '@clerk/nextjs';
 
 export async function generateMetadata() {
   return Meta.generate({
@@ -23,17 +24,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      suppressHydrationWarning
-      lang="en"
-      data-theme="light"
-      className={classNames(
-        fonts.heading.variable,
-        fonts.body.variable,
-        fonts.label.variable,
-        fonts.code.variable,
-      )}
-    >
+    <ClerkProvider>
+      <html
+        suppressHydrationWarning
+        lang="en"
+        data-theme="light"
+        className={classNames(
+          fonts.heading.variable,
+          fonts.body.variable,
+          fonts.label.variable,
+          fonts.code.variable,
+        )}
+      >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -120,5 +122,6 @@ export default async function RootLayout({
         </Providers>
       </body>
     </html>
+    </ClerkProvider>
   );
 }
