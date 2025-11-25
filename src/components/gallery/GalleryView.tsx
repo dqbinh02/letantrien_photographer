@@ -20,8 +20,8 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
   const images = media.filter((m) => m.type === "image");
 
   const breakpointColumnsObj = {
-    // default: 2 columns on desktop to give photos more breathing room
-    default: 2,
+    // default: 3 columns on desktop to give photos more breathing room
+    default: 3,
     // 2 columns for medium widths (tablets)
     1024: 2,
     // 2 columns for mobile
