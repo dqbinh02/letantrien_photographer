@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Masonry from "react-masonry-css";
+import { motion } from "framer-motion";
 import { FaHeart } from "react-icons/fa";
 import { ImageModal } from "../ImageModal";
 import type { MediaDocument } from "@/types";
@@ -11,21 +13,22 @@ interface GalleryViewProps {
   media: MediaDocument[];
   hasToken?: boolean;
   token?: string | null;
+  columnCount?: number;
 }
 
-export default function GalleryView({ media, hasToken = false, token = null }: GalleryViewProps) {
+export default function GalleryView({ media, hasToken = false, token = null, columnCount = 3 }: GalleryViewProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   // Filter only images
   const images = media.filter((m) => m.type === "image");
 
   const breakpointColumnsObj = {
-    // default: 3 columns on desktop to give photos more breathing room
-    default: 3,
-    // 2 columns for medium widths (tablets)
-    1024: 2,
-    // 2 columns for mobile
-    640: 2,
+    // default: use the selected column count
+    default: columnCount,
+    // For tablet (1024px), max 2 columns unless user selected 1
+    1024: Math.min(columnCount, 2),
+    // For mobile (640px), max 2 columns unless user selected 1
+    640: Math.min(columnCount, 2),
   };
 
   const handleImageClick = (index: number) => {
@@ -101,8 +104,13 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
         columnClassName="my-masonry-grid_column"
       >
         {images.map((image, index) => (
-          <div 
+          <motion.div 
             key={image._id?.toString() || `image-${index}`}
+            layout
+            layoutId={image._id?.toString() || `image-${index}`}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
             className="media-item-container"
             style={{ position: 'relative' }}
           >
@@ -129,6 +137,7 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
             )}
             {hasToken && (
               <button 
+                type="button"
                 className="download-overlay"
                 onClick={(e) => handleDownload(image, e)}
                 title="Download"
@@ -143,13 +152,14 @@ export default function GalleryView({ media, hasToken = false, token = null }: G
                   strokeLinecap="round" 
                   strokeLinejoin="round"
                 >
+                  <title>Download</title>
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
               </button>
             )}
-          </div>
+          </motion.div>
         ))}
       </Masonry>
 

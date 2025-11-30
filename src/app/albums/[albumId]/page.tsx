@@ -1,6 +1,6 @@
 "use client";
 
-import { Column, Heading, Text, Button } from "@once-ui-system/core";
+import { Column, Heading, Text, Button, Row, ToggleButton } from "@once-ui-system/core";
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import GalleryView from "@/components/gallery/GalleryView";
@@ -23,6 +23,7 @@ export default function AlbumDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [columnCount, setColumnCount] = useState(3);
 
   useEffect(() => {
     const fetchAlbum = async () => {
@@ -198,32 +199,65 @@ export default function AlbumDetailPage() {
         )}
       </Column>
 
-      {/* Gallery - with Download All button positioned above if token exists */}
-      <div style={{ position: 'relative', width: '100%' }}>
-        {hasToken && (
-          <div style={{ 
-            position: 'absolute', 
-            top: '-45px', 
-            left: '0',
-            zIndex: 10,
-          }}>
-            <Button
-              onClick={handleDownloadAll}
-              disabled={isDownloading}
-              variant="secondary"
-              size="m"
-            >
-              {isDownloading ? 'Creating ZIP...' : 'Download All'}
-            </Button>
-          </div>
-        )}
+      {/* Gallery Controls & View */}
+      <Column fillWidth gap="32">
+        <Row 
+          fillWidth 
+          horizontal="between" 
+          vertical="center" 
+          gap="16"
+          s={{ flexDirection: 'column', alignItems: 'center' }}
+        >
+          {/* Left side: Download button (if token) */}
+          <Row>
+            {hasToken && (
+              <Button
+                onClick={handleDownloadAll}
+                disabled={isDownloading}
+                variant="secondary"
+                size="m"
+              >
+                {isDownloading ? 'Creating ZIP...' : 'Download All'}
+              </Button>
+            )}
+          </Row>
+
+          {/* Right side: View options */}
+          <Row 
+            background="surface" 
+            border="neutral-alpha-weak" 
+            radius="m" 
+            padding="4" 
+            gap="4"
+          >
+            <ToggleButton
+              prefixIcon="single"
+              selected={columnCount === 1}
+              onClick={() => setColumnCount(1)}
+              aria-label="Single column view"
+            />
+            <ToggleButton
+              prefixIcon="columns"
+              selected={columnCount === 2}
+              onClick={() => setColumnCount(2)}
+              aria-label="Two columns view"
+            />
+            <ToggleButton
+              prefixIcon="grid3"
+              selected={columnCount === 3}
+              onClick={() => setColumnCount(3)}
+              aria-label="Three columns view"
+            />
+          </Row>
+        </Row>
         
         <GalleryView 
           media={media}
           hasToken={hasToken}
           token={token}
+          columnCount={columnCount}
         />
-      </div>
+      </Column>
     </Column>
   );
 }

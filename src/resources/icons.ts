@@ -1,4 +1,4 @@
-import { IconType } from "react-icons";
+import type { IconType } from "react-icons";
 
 import {
   HiArrowUpRight,
@@ -13,6 +13,14 @@ import {
   PiGridFourDuotone,
   PiBookBookmarkDuotone,
   PiImageDuotone,
+  PiSquareDuotone,
+  PiColumnsDuotone,
+  PiGridNineDuotone,
+  PiLockKeyDuotone,
+  PiDownloadSimpleDuotone,
+  PiHeartDuotone,
+  PiPaletteDuotone,
+  PiArrowsClockwiseDuotone,
 } from "react-icons/pi";
 
 import { FaDiscord, FaGithub, FaLinkedin, FaX, FaThreads, FaFacebook } from "react-icons/fa6";
@@ -26,6 +34,14 @@ export const iconLibrary: Record<string, IconType> = {
   home: PiHouseDuotone,
   gallery: PiImageDuotone,
   grid: PiGridFourDuotone,
+  single: PiSquareDuotone,
+  columns: PiColumnsDuotone,
+  grid3: PiGridNineDuotone,
+  lock: PiLockKeyDuotone,
+  download: PiDownloadSimpleDuotone,
+  heart: PiHeartDuotone,
+  palette: PiPaletteDuotone,
+  refresh: PiArrowsClockwiseDuotone,
   discord: FaDiscord,
   github: FaGithub,
   linkedin: FaLinkedin,
