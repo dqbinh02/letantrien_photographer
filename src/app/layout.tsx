@@ -23,8 +23,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fallback key to prevent build errors if env var is missing
+  // This allows the app to build but auth won't work without the real key
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_Y2xlcmsuZXhhbXBsZS5jb20k";
+
   return (
-    <ClerkProvider>
+    <ClerkProvider publishableKey={publishableKey}>
       <html
         suppressHydrationWarning
         lang="en"
@@ -36,21 +40,6 @@ export default async function RootLayout({
           fonts.code.variable,
         )}
       >
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const savedTheme = localStorage.getItem('data-theme');
-                const theme = savedTheme || 'light';
-                document.documentElement.setAttribute('data-theme', theme);
-              } catch(e) {
-                document.documentElement.setAttribute('data-theme', 'light');
-              }
-            `,
-          }}
-        />
-      </head>
       <body style={{ margin: 0, padding: 0, minHeight: '100vh' }}>
         <Providers>
           <ThemeInitScript />

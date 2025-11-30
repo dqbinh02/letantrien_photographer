@@ -172,8 +172,6 @@ export default function GalleryView({ media, hasToken = false, token = null, col
           onPrev={handlePrev}
           hasNext={selectedImageIndex < images.length - 1}
           hasPrev={selectedImageIndex > 0}
-          nextImageUrl={selectedImageIndex < images.length - 1 ? images[selectedImageIndex + 1]?.url : undefined}
-          prevImageUrl={selectedImageIndex > 0 ? images[selectedImageIndex - 1]?.url : undefined}
         />
       )}
     </div>

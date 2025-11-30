@@ -12,8 +12,6 @@ interface ImageModalProps {
   onPrev?: () => void;
   hasNext?: boolean;
   hasPrev?: boolean;
-  nextImageUrl?: string;
-  prevImageUrl?: string;
 }
 
 export function ImageModal({ 
@@ -23,9 +21,7 @@ export function ImageModal({
   onNext, 
   onPrev,
   hasNext = false,
-  hasPrev = false,
-  nextImageUrl,
-  prevImageUrl
+  hasPrev = false
 }: ImageModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageUrl, setCurrentImageUrl] = useState(imageUrl);
@@ -77,9 +73,8 @@ export function ImageModal({
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      open
       style={{
         position: 'fixed',
         top: 0,
@@ -93,6 +88,9 @@ export function ImageModal({
         justifyContent: 'center',
         padding: '20px',
         animation: 'fadeIn 0.2s ease-out',
+        border: 'none',
+        maxWidth: '100%',
+        maxHeight: '100%',
       }}
       onClick={onClose}
       onKeyDown={(e) => {
@@ -228,6 +226,6 @@ export function ImageModal({
           }
         }
       `}</style>
-    </div>
+    </dialog>
   );
 }
